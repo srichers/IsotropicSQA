@@ -27,13 +27,13 @@ void set_Ebins(vector<double>& E){
 // Initialize //
 //============//
 void initialize(vector<vector<MATRIX<complex<double>,NF,NF> > >& fmatrixf,
-		double r, double rho, double T, double Ye, double mixing){
+		double r, double rho, double T, double Ye, double mixing, int do_interact){
   // T should be MeV
   cout << "Setting initial data." << endl;
   cout << "rho = " << rho << " g/ccm" << endl;
   cout << "T = " << T << " MeV" << endl;
   cout << "Ye = " << Ye << endl;
-  eas.set(rho,T,Ye);
+  eas.set(rho,T,Ye,do_interact);
   
   for(int i=0; i<NE; i++){
     for(state m=matter; m<=antimatter; m++)
@@ -164,7 +164,7 @@ vector<vector<MATRIX<complex<double>,NF,NF> > > my_interact
 	Phi0tilde = tilde_matrix(Phi0e, Phi0x);
 	Phi0 = Phi0avg - Phi0tilde;
 	block = blocking_term0(Phi0, fmatrixf[m][i], fmatrixf[m][j]);
-	conv_to_in_rate = exp((E[j]-E[i])/(temperature*1e6*cgs::units::eV));
+	conv_to_in_rate = exp((E[j]-E[i])/(eas.temperature*1e6*cgs::units::eV));
 	for(flavour f1=e; f1<=mu; f1++){
 	  for(flavour f2=e; f2<=mu; f2++){
 	    unblock_in  = fmatrixf[m][j][f1][f2] * 0.5*Phi0   [f1][f2]*conv_to_in_rate;
@@ -184,7 +184,7 @@ vector<vector<MATRIX<complex<double>,NF,NF> > > my_interact
 	  Phi0tilde = tilde_matrix(Phi0e, Phi0x);
 	  Phi0 = Phi0avg - Phi0tilde;
 	  block = blocking_term0(Phi0, fmatrixf[m][i], fmatrixf[mbar][j]);
-	  conv_to_in_rate = exp(-(E[j]+E[i])/(temperature*1e6*cgs::units::eV));
+	  conv_to_in_rate = exp(-(E[j]+E[i])/(eas.temperature*1e6*cgs::units::eV));
 	  for(flavour f1=e; f1<=mu; f1++){
 	    for(flavour f2=e; f2<=mu; f2++){
 	      unblock_in  = ((f1==f2 ? 1. : 0.) - fmatrixf[mbar][j][f1][f2])

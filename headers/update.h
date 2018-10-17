@@ -1,7 +1,7 @@
 //=========//
 // UpdateC //
 //=========//
-vector<vector<vector<MATRIX<complex<double>,NF,NF> > > > UpdateC(double r,double Ye){
+vector<vector<vector<MATRIX<complex<double>,NF,NF> > > > UpdateC(double r,double rho, double Ye){
   vector<MATRIX<complex<double>,NF,NF> > VfMSW(NM);
   MATRIX<complex<double>,NF,NF> Hf,Hfbar;
   vector<double> kk,kkbar;

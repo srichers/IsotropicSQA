@@ -110,6 +110,7 @@ class EAS{
   int do_iscat, do_pair, do_delta;
   int ns, ng, nv;
   double munue = 0./0.; /*erg*/
+  double temperature = 0./0.; /*MeV*/
   vector<double> eas;
   vector<double> escat_kernel0; // out-scattering
   vector<double> escat_kernel1;
@@ -153,10 +154,11 @@ class EAS{
     cout << "#   n_E     = " << ng << endl;
   }
 
-  void set(double rho_in, double T_in/*MeV*/, double Ye_in){
+  void set(double rho_in, double T_in/*MeV*/, double Ye_in, const int do_interact){
     // condition inputs, get EOS info
     Ye_in = max(Ye_in,__nulibtable_MOD_nulibtable_ye_min);
     munue = get_munue(rho_in,T_in,Ye_in); // MeV
+    temperature = T_in;
     double eta = get_eta(rho_in,T_in,Ye_in); // dimensionless
     int n_legendre = 2;
 

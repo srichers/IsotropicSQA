@@ -42,8 +42,6 @@ using std::vector;
 #include "headers/matrix.h"
 
 // global variables
-double rho, Ye, temperature/*MeV*/; // rho is the mass density
-int do_oscillate, do_interact;
 
 // headers
 #include "headers/parameters.h"
@@ -61,6 +59,7 @@ double Vmu(double rho, double Ye){ return 0.;}
 MATRIX<complex<double>,NF,NF> B(vector<double> y);
 void K(double r,
        double dr,
+       double rho, double Ye,
        const vector<MATRIX<complex<double>,NF,NF> >& pmatrixm0matter,
        vector<vector<vector<vector<double> > > > &Y,
        vector<vector<vector<MATRIX<complex<double>,NF,NF> > > > &C0,
@@ -108,6 +107,7 @@ int main(int argc, char *argv[]){
     cout << eosfilename << endl;
     eas = EAS(nulibfilename, eosfilename);
 
+    double rho, Ye, temperature/*MeV*/; // rho is the mass density
     fin>>rho;
     fin>>Ye;
     fin>>temperature;
@@ -281,9 +281,10 @@ int main(int argc, char *argv[]){
     fin>>step;
 
     // do we oscillate and interact?
+    int do_oscillate, do_interact;
     fin>>do_oscillate;
     fin>>do_interact;
-    initialize(fmatrixf,0,rho,temperature,Ye, mixing);
+    initialize(fmatrixf,0,rho,temperature,Ye, mixing, do_interact);
     
     // ***************************************
     // variables followed as a function of r *
@@ -405,7 +406,7 @@ int main(int argc, char *argv[]){
 		      for(int l=0;l<=k-1;l++)
 			Y[m][i][x][j] += BB[k][l] * Ks[l][m][i][x][j];
 
-	      K(r,dr,pmatrixm0matter,Y,C,A,Ks[k]);
+	      K(r,dr,rho,Ye,pmatrixm0matter,Y,C,A,Ks[k]);
 	    }
 	  
 	    // increment all quantities from oscillation
@@ -438,7 +439,7 @@ int main(int argc, char *argv[]){
 	      }
 	    }
 	    Y=Y0;
-	    C=UpdateC(r,Ye);
+	    C=UpdateC(r,rho,Ye);
 	    A=UpdateA(C,C0,A0);
 	  }
 	  r=r0+dr;
@@ -535,6 +536,7 @@ MATRIX<complex<double>,NF,NF> B(vector<double> y){
 //===//
 void K(double r,
        double dr,
+       double rho, double Ye,
        const vector<MATRIX<complex<double>,NF,NF> >& pmatrixm0matter,
        vector<vector<vector<vector<double> > > > &Y,
        vector<vector<vector<MATRIX<complex<double>,NF,NF> > > > &C0,
