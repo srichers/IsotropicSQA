@@ -1,0 +1,11 @@
+nulibfilename
+rho
+Ye
+temperature
+outputfilename
+tmax - maximum time (s) at which to end the calculation
+dm21 - mass squared difference (eV^2)
+theta12V (degrees)
+accuracy
+note - used for filenames
+step - how often to output (number of steps)
