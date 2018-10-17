@@ -57,23 +57,23 @@ double Vmu(double rho, double Ye){ return 0.;}
 #include "headers/adiabatic basis.h"
 #include "headers/jacobians.h"
 
-vector<MATRIX<complex<double>,NF,NF> > pmatrixm0matter(NM);
-vector<vector<MATRIX<complex<double>,NF,NF> > > fmatrixf(NM);
 
 MATRIX<complex<double>,NF,NF> B(vector<double> y);
 void K(double r,
        double dr,
+       const vector<MATRIX<complex<double>,NF,NF> >& pmatrixm0matter,
        vector<vector<vector<vector<double> > > > &Y,
        vector<vector<vector<MATRIX<complex<double>,NF,NF> > > > &C0,
        vector<vector<vector<vector<double> > > > &A0,
        vector<vector<vector<vector<double> > > > &K);
-void Outputvsr(ofstream &foutf, double r);
+void Outputvsr(ofstream &foutf, double r, const vector<vector<MATRIX<complex<double>,NF,NF> > >& fmatrixf);
 
 #include "headers/update.h"
 #include "headers/interact.h"
 
 void getP(const double r,
-	  const vector<vector<MATRIX<complex<double>,NF,NF> > > U0, 
+	  const vector<vector<MATRIX<complex<double>,NF,NF> > >& U0,
+	  const vector<vector<MATRIX<complex<double>,NF,NF> > >& fmatrixf,
 	  vector<MATRIX<complex<double>,NF,NF> >& pmatrixm0matter){
 
   for(int i=0;i<=NE-1;i++){
@@ -261,7 +261,8 @@ int main(int argc, char *argv[]){
     
     // density matrices at initial point, rhomatrixm0 - but not rhomatrixf0
     // will be updated whenever discontinuities are crossed and/or S is reset
-    pmatrixm0matter=vector<MATRIX<complex<double>,NF,NF> >(NE);
+    vector<MATRIX<complex<double>,NF,NF> > pmatrixm0matter(NE);
+    vector<vector<MATRIX<complex<double>,NF,NF> > > fmatrixf(NM);
     fmatrixf[matter]=fmatrixf[antimatter]=vector<MATRIX<complex<double>,NF,NF> >(NE);
 
     // yzhu14 density/potential matrices art rmin
@@ -345,7 +346,7 @@ int main(int argc, char *argv[]){
 	
       finish=output=false;
       counterout=1;
-      Outputvsr(foutf,r);
+      Outputvsr(foutf,r, fmatrixf);
 	
       for(state m=matter; m<=antimatter; m++)
 	for(int i=0; i<NE; i++)
@@ -385,7 +386,7 @@ int main(int argc, char *argv[]){
 	C0=C;
 	A0=A;
 	fmatrixf0 = fmatrixf;
-	getP(r,U0,pmatrixm0matter);
+	getP(r,U0,fmatrixf,pmatrixm0matter);
 
 	// beginning of RK section
 	do{ 
@@ -404,11 +405,11 @@ int main(int argc, char *argv[]){
 		      for(int l=0;l<=k-1;l++)
 			Y[m][i][x][j] += BB[k][l] * Ks[l][m][i][x][j];
 
-	      K(r,dr,Y,C,A,Ks[k]);
+	      K(r,dr,pmatrixm0matter,Y,C,A,Ks[k]);
 	    }
 	  
 	    // increment all quantities from oscillation
-	    getP(r0+dr,U0,pmatrixm0matter);
+	    getP(r0+dr,U0,fmatrixf,pmatrixm0matter);
 	    Y=Y0;
 	    for(state m=matter;m<=antimatter;m++){
 	      for(int i=0;i<=NE-1;i++){
@@ -500,7 +501,7 @@ int main(int argc, char *argv[]){
 	}
 	else counterout++;
 	if(output==true || finish==true){
-	  Outputvsr(foutf,r);
+	  Outputvsr(foutf,r,fmatrixf);
 	  output=false;
 	}
 
@@ -534,6 +535,7 @@ MATRIX<complex<double>,NF,NF> B(vector<double> y){
 //===//
 void K(double r,
        double dr,
+       const vector<MATRIX<complex<double>,NF,NF> >& pmatrixm0matter,
        vector<vector<vector<vector<double> > > > &Y,
        vector<vector<vector<MATRIX<complex<double>,NF,NF> > > > &C0,
        vector<vector<vector<vector<double> > > > &A0,
@@ -690,7 +692,7 @@ void K(double r,
 //===========//
 // Outputvsr //
 //===========//
-void Outputvsr(ofstream &foutf, double r){
+void Outputvsr(ofstream &foutf, const double r, const vector<vector<MATRIX<complex<double>,NF,NF> > >& fmatrixf){
   foutf << r << "\t";
   for(int i=0; i<NE; i++)
     for(state m=matter; m<=antimatter; m++)
