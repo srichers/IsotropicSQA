@@ -157,9 +157,13 @@ vector<vector<MATRIX<complex<double>,NF,NF> > > my_interact
     // get nulib species indices
     int se = (m==matter ? 0 : 1);
     int sx = (m==matter ? 2 : 3);
+    state mbar = (m==matter ? antimatter : matter);
 
 #pragma omp parallel for
     for(int i=0; i<NE; i++){
+      // temporary variables
+      MATRIX<complex<double>,NF,NF> Pi_plus, Pi_minus, tmp;
+
       // make sure dfdr = 0
       for(flavour f1=e; f1<=mu; f1++)
 	for(flavour f2=e; f2<=mu; f2++)
@@ -177,6 +181,7 @@ vector<vector<MATRIX<complex<double>,NF,NF> > > my_interact
     
       // scattering and pair annihilation
       for(int j=0; j<NE; j++){
+	
 	// reusable variables
 	double Phi0e, Phi0x, conv_to_in_rate;
 	complex<double> unblock_in, unblock_out;
@@ -203,7 +208,6 @@ vector<vector<MATRIX<complex<double>,NF,NF> > > my_interact
       
 	// annihilation from group i and anti group j
 	if(eas.do_pair){
-	  state mbar = (m==matter ? antimatter : matter);
 	  Phi0e = eas.Phi0pair(se,i,j); // cm^3/s/sr
 	  Phi0x = eas.Phi0pair(sx,i,j);
 	  assert(Phi0e >= Phi0x);
@@ -223,8 +227,45 @@ vector<vector<MATRIX<complex<double>,NF,NF> > > my_interact
 	    }
 	  }
 	}
-      
+	
+	// 4-neutrino scattering
+	if(eas.do_nu4scat){
+	  for(int j3=0; j3<NE; j3++){
+	    int index = eas.nu4_kernel_index(i,j,j3);
+	    double kernel = __nulibtable_MOD_nulibtable_nu4scat[index];
+	    int j2 = eas.nu4_bin2(i,j,j3);
+	    
+	    tmp = (1.-fmatrixf[m][j]) * fmatrixf[m][j2];
+	    Pi_minus += (Trace(tmp) + tmp) * (1.-fmatrixf[m][j3]) * kernel;
+	    
+	    tmp = fmatrixf[m][j]*(1.-fmatrixf[m][j2]);
+	    Pi_plus  += (Trace(tmp) + tmp) * fmatrixf[m][j3] * kernel;
+	  }
+	}
+	
+	// 4-neutrino pair processes
+	if(eas.do_nu4pair){
+	  for(int j3=0; j3<NE; j3++){
+	    double kernel = __nulibtable_MOD_nulibtable_nu4pair[eas.nu4_kernel_index(i,j,j3)];
+	    int j2 = eas.nu4_bin2(i,j,j3);
+	    
+	    tmp = fmatrixf[mbar][j2] * (1.-fmatrixf[mbar][j]);
+	    Pi_minus += (Trace(tmp) + tmp) * (1.-fmatrixf[m][j3]) * kernel;
+	    tmp = (1.-fmatrixf[m][j3]) * (1.-fmatrixf[mbar][j]);
+	    Pi_minus += (Trace(tmp) + tmp) * fmatrixf[mbar][j2] * kernel;
+	    
+	    tmp = (1.-fmatrixf[mbar][j2])*fmatrixf[mbar][j];
+	    Pi_plus += (Trace(tmp) + tmp) * fmatrixf[m][j3] * kernel;
+	    tmp = fmatrixf[m][j3]*fmatrixf[mbar][j];
+	    Pi_plus += (Trace(tmp) + tmp) * (1.-fmatrixf[mbar][j2]) * kernel;
+	  }
+	}
+	  
+	assert(j<NE);
       }
+
+      dfdr[m][i] += Pi_plus *(1.-fmatrixf[m][i]) + (1.-fmatrixf[m][i])*Pi_plus ;
+      dfdr[m][i] -= Pi_minus*    fmatrixf[m][i]  +     fmatrixf[m][i] *Pi_minus;
     }
   }
   return dfdr;

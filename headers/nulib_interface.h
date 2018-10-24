@@ -77,6 +77,8 @@ extern double* __nulibtable_MOD_nulibtable_logtemp;
 extern double* __nulibtable_MOD_nulibtable_ye;
 extern double* __nulibtable_MOD_nulibtable_logitemp;
 extern double* __nulibtable_MOD_nulibtable_logieta;
+extern double* __nulibtable_MOD_nulibtable_nu4scat;
+extern double* __nulibtable_MOD_nulibtable_nu4pair;
 extern double  __nulibtable_MOD_nulibtable_logtemp_min;
 extern double  __nulibtable_MOD_nulibtable_logtemp_max;
 extern double  __nulibtable_MOD_nulibtable_logrho_min;
@@ -127,14 +129,14 @@ extern "C"{
 		  int* ngroups2, // ng out (should be same as eas_n1)
 		  int* n_phis);   // number of legendre terms (=2)
 
-  void nulibtable_reader_(char*,int*,int*,int*,int);
+  void nulibtable_reader_(char*,int*,int*,int*,int*,int*,int);
   void set_eos_variables_(double* eos_variables);
   void read_eos_table_(char* filename);
 }
 
 class EAS{
  public:
-  int do_iscat, do_pair, do_delta;
+  int do_iscat, do_pair, do_delta, do_nu4scat, do_nu4pair;
   int ns, ng, nv;
   double munue = 0./0.; /*erg*/
   double temperature = 0./0.; /*MeV*/
@@ -150,10 +152,15 @@ class EAS{
     do_iscat = 0;
     do_pair = 0;
     do_delta = 0;
+    do_nu4scat = 0;
+    do_nu4pair = 0;
     if(hdf5_dataset_exists(filename.c_str(),"/scattering_delta")) do_delta = true;
     if(hdf5_dataset_exists(filename.c_str(),"/inelastic_phi0"))   do_iscat = true;
     if(hdf5_dataset_exists(filename.c_str(),"/epannihil_phi0"))   do_pair = true;
-    nulibtable_reader_((char*)filename.c_str(), &do_iscat, &do_pair, &do_delta, filename.length());
+    if(hdf5_dataset_exists(filename.c_str(),"/nu4scat_kernel"))   do_nu4scat = true;
+    if(hdf5_dataset_exists(filename.c_str(),"/nu4pair_kernel"))   do_nu4pair = true;
+    cout << "TABLE ELEMENTS: " << do_delta << do_iscat << do_pair << do_nu4scat << do_nu4pair << endl;
+    nulibtable_reader_((char*)filename.c_str(), &do_iscat, &do_pair, &do_delta, &do_nu4scat, &do_nu4pair, filename.length());
     read_eos_table_((char*)eosfilename.c_str());
 
     // resize arrays
@@ -261,6 +268,13 @@ class EAS{
     return is + igin*ns + igout*ns*ng;
   }
 
+  inline int nu4_kernel_index(int ik, int i1, int i3) const{
+    return i3 + ng*i1 + ng*ng*ik;
+  }
+  inline int nu4_bin2(int ik, int i1, int i3) const{
+    return i1+i3-ik;
+  }
+  
   double emis(int is,int ig){ // 1/cm/sr
     return abs(is,ig) * fermidirac(is,ig);
   }
