@@ -58,6 +58,14 @@ template<typename T, unsigned a, unsigned b>
       return result;
     }
 
+    MATRIX<T,a,b> operator*(const T right) const{
+      MATRIX<T,a,b> result;
+      for(unsigned i=0; i<a; i++)
+	for(unsigned j=0; j<b; j++)
+	  result[i][j] = m[i][j]*right;
+      return result;
+    }
+
     template<typename T1>
     MATRIX<T,a,b> operator+(const MATRIX<T1,a,b>& right) const{
       MATRIX<T,a,b> result;
@@ -66,7 +74,24 @@ template<typename T, unsigned a, unsigned b>
 	  result[i][j] = m[i][j] + right[i][j];
       return result;
     }
-
+    template<typename T1>
+    MATRIX<T,a,b> operator+=(const MATRIX<T1,a,b>& right){
+      *this = *this + right;
+      return *this;
+    }
+    template<typename T1>
+    MATRIX<T,a,b> operator-=(const MATRIX<T1,a,b>& right){
+      *this = *this - right;
+      return *this;
+    }
+    MATRIX<T,a,b> operator+(const T right) const{
+      assert(a==b);
+      MATRIX<T,a,b> result = *this;
+      for(unsigned i=0; i<a; i++)
+	result[i][i] += right;
+      return result;
+    }
+    
     template<typename T1>
     MATRIX<T,a,b> operator-(const MATRIX<T1,a,b>& right) const{
       MATRIX<T,a,b> result;
@@ -93,6 +118,16 @@ template<typename T, unsigned a, unsigned b>
     }
 
 };
+
+template<typename T, typename T2, unsigned a>
+  MATRIX<T,a,a> operator+(const T2 left, const MATRIX<T,a,a> right){
+  return right + left;
+}
+
+template<typename T, typename T2, unsigned a>
+  MATRIX<T,a,a> operator-(const T2 left, const MATRIX<T,a,a> right){
+  return (-right) + left;
+}
 
 template<typename T, unsigned a, unsigned b>
 ostream& operator<<(ostream& os, const MATRIX<T,a,b>& m){
