@@ -220,7 +220,7 @@ class EAS{
     // PAIR ANNIHILATION KERNELS
     if(do_pair){
       //[a][j][i] = out group i, and in group j (ccm/s)
-      // a=0:Phi0a a=1:Phi0p a=2:Phi1a a=2:Phi1p
+      // a=0:Phi0p a=1:Phi0a a=2:Phi1p a=3:Phi1a
       int nvars = n_legendre*2;
       double phi[nvars][ng][ng]; 
       for(int lns=1; lns<=__nulibtable_MOD_nulibtable_number_species; lns++){
@@ -228,8 +228,8 @@ class EAS{
 							  &ng,&ng,&nvars);
 	for(int og=0; og<ng; og++)
 	  for(int ig=0; ig<ng; ig++){
-	    pair_kernel0[kernel_index(lns-1, ig, og)] = phi[0][og][ig];
-	    pair_kernel1[kernel_index(lns-1, ig, og)] = phi[2][og][ig];
+	    pair_kernel0[kernel_index(lns-1, ig, og)] = phi[1][og][ig];
+	    pair_kernel1[kernel_index(lns-1, ig, og)] = phi[3][og][ig];
 	  }
       }
     }
