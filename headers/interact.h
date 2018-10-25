@@ -81,14 +81,29 @@ void initialize(vector<vector<MATRIX<complex<double>,NF,NF> > >& fmatrixf,
     fmatrixf[antimatter][i][mu][e ] = sqrt(fa*fx)*mixing;
       
     cout << "GROUP " << i << endl;
-    cout << "\teas.emis = {" << eas.emis(0,i) << ", " << eas.emis(1,i) << ", " << eas.emis(2,i) << "}" << endl;
-    cout << "\teas.abs = {" << eas.abs(0,i) << ", " << eas.abs(1,i) << ", " << eas.abs(2,i) << "}" << endl;
-    cout << "\tBB = {" << eas.emis(0,i)/eas.abs(0,i) << ", " << eas.emis(1,i)/eas.abs(1,i) << ", " << eas.emis(2,i)/eas.abs(2,i) << "}" << endl;
-    cout << "\teas.scat = {" << eas.scat(0,i) << ", " << eas.scat(1,i) << ", " << eas.scat(2,i) << "}" << endl;
-
-    cout << "\tf = {" << real(fmatrixf[matter][i][e][e]) << ", " << real(fmatrixf[antimatter][i][e][e]) << ", " << real(fmatrixf[matter][i][mu][mu]) << ", " << real(fmatrixf[antimatter][i][mu][mu]) << "}" << endl;
+    cout << "eas.emis \t eas.abs \t BB \t eas.scat \t f" << (eas.do_pair ? "\t eas.pair_emis" : "") << endl;
+    for(int is=0; is<4; is++){
+      cout << eas.emis(is,i) << "\t";
+      cout << eas.abs (is,i) << "\t";
+      cout << eas.emis(is,i)/eas.abs(is,i) << "\t";
+      cout << eas.scat(is,i) << "\t";
+      if(is==0) cout << real(fmatrixf[    matter][i][e ][e ]) << "\t";
+      if(is==1) cout << real(fmatrixf[antimatter][i][e ][e ]) << "\t";
+      if(is==2) cout << real(fmatrixf[    matter][i][mu][mu]) << "\t";
+      if(is==3) cout << real(fmatrixf[antimatter][i][mu][mu]) << "\t";
+      if(eas.do_pair){
+      	double pair_emis = 0;
+      	for(int j=0; j<NE; j++){
+	  double conv_to_in_rate = exp(-(E[j]+E[i])/(eas.temperature*1e6*cgs::units::eV));
+      	  pair_emis += 4.*M_PI*nu[j]*nu[j]*dnu[j]/cgs::constants::c4 * 0.5*eas.Phi0pair(is,i,j) * conv_to_in_rate;
+	}
+      	cout << pair_emis << "\t";
+      }
+      cout << endl;
+    }
+    cout << endl;
   }
-  
+
   for(state m=matter; m<=antimatter; m++)
     for(int i=0; i<NE; i++)
       for(flavour f1=e; f1<=mu; f1++)
