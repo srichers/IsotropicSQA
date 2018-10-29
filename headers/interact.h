@@ -159,8 +159,8 @@ MATRIX<complex<double>,2,2> blocking_term0(MATRIX<double,2,2> Phi0matrix, MATRIX
 }
 
 vector<vector<MATRIX<complex<double>,NF,NF> > > my_interact
-  (vector<vector<MATRIX<complex<double>,NF,NF> > >& fmatrixf,
-   double rho, double T, double Ye){
+  (const vector<vector<MATRIX<complex<double>,NF,NF> > >& fmatrixf,
+   const double rho, const double T, const double Ye){
 
   vector<vector<MATRIX<complex<double>,NF,NF> > > dfdr(2, vector<MATRIX<complex<double>,NF,NF> >(NE));
 
@@ -170,9 +170,9 @@ vector<vector<MATRIX<complex<double>,NF,NF> > > my_interact
 
   for(state m=matter; m<=antimatter; m++){
     // get nulib species indices
-    int se = (m==matter ? 0 : 1);
-    int sx = (m==matter ? 2 : 3);
-    state mbar = (m==matter ? antimatter : matter);
+    const int se = (m==matter ? 0 : 1);
+    const int sx = (m==matter ? 2 : 3);
+    const state mbar = (m==matter ? antimatter : matter);
 
 #pragma omp parallel for
     for(int i=0; i<NE; i++){
@@ -246,32 +246,51 @@ vector<vector<MATRIX<complex<double>,NF,NF> > > my_interact
 	// 4-neutrino scattering
 	if(eas.do_nu4scat){
 	  for(int j3=0; j3<NE; j3++){
-	    int index = eas.nu4_kernel_index(i,j,j3);
-	    double kernel = __nulibtable_MOD_nulibtable_nu4scat[index];
 	    int j2 = eas.nu4_bin2(i,j,j3);
-	    
+	    if(j2<0 or j2>=NE) continue;
+
+	    int index = eas.nu4_kernel_index(i,j,j3);
+	    double kernel = __nulibtable_MOD_nulibtable_nu4scat[index] * 0.5;
+
 	    tmp = (1.-fmatrixf[m][j]) * fmatrixf[m][j2];
 	    Pi_minus += (Trace(tmp) + tmp) * (1.-fmatrixf[m][j3]) * kernel;
-	    
+	    tmp = (1.-fmatrixf[m][j3]) * fmatrixf[m][j2];
+	    Pi_minus += (Trace(tmp) + tmp) * (1.-fmatrixf[m][j]) * kernel;
+
 	    tmp = fmatrixf[m][j]*(1.-fmatrixf[m][j2]);
 	    Pi_plus  += (Trace(tmp) + tmp) * fmatrixf[m][j3] * kernel;
+	    tmp = fmatrixf[m][j3]*(1.-fmatrixf[m][j2]);
+	    Pi_plus  += (Trace(tmp) + tmp) * fmatrixf[m][j] * kernel;
 	  }
 	}
 	
 	// 4-neutrino pair processes
 	if(eas.do_nu4pair){
 	  for(int j3=0; j3<NE; j3++){
-	    double kernel = __nulibtable_MOD_nulibtable_nu4pair[eas.nu4_kernel_index(i,j,j3)];
 	    int j2 = eas.nu4_bin2(i,j,j3);
+	    if(j2<0 or j2>=NE) continue;
+
+	    int index = eas.nu4_kernel_index(i,j,j3);
+	    double kernel = __nulibtable_MOD_nulibtable_nu4pair[index] * 0.5;
 	    
 	    tmp = fmatrixf[mbar][j2] * (1.-fmatrixf[mbar][j]);
 	    Pi_minus += (Trace(tmp) + tmp) * (1.-fmatrixf[m][j3]) * kernel;
+	    tmp = fmatrixf[mbar][j2] * (1.-fmatrixf[mbar][j3]);
+	    Pi_minus += (Trace(tmp) + tmp) * (1.-fmatrixf[m][j]) * kernel;
+
 	    tmp = (1.-fmatrixf[m][j3]) * (1.-fmatrixf[mbar][j]);
+	    Pi_minus += (Trace(tmp) + tmp) * fmatrixf[mbar][j2] * kernel;
+	    tmp = (1.-fmatrixf[m][j]) * (1.-fmatrixf[mbar][j3]);
 	    Pi_minus += (Trace(tmp) + tmp) * fmatrixf[mbar][j2] * kernel;
 	    
 	    tmp = (1.-fmatrixf[mbar][j2])*fmatrixf[mbar][j];
 	    Pi_plus += (Trace(tmp) + tmp) * fmatrixf[m][j3] * kernel;
+	    tmp = (1.-fmatrixf[mbar][j2])*fmatrixf[mbar][j3];
+	    Pi_plus += (Trace(tmp) + tmp) * fmatrixf[m][j] * kernel;
+
 	    tmp = fmatrixf[m][j3]*fmatrixf[mbar][j];
+	    Pi_plus += (Trace(tmp) + tmp) * (1.-fmatrixf[mbar][j2]) * kernel;
+	    tmp = fmatrixf[m][j]*fmatrixf[mbar][j3];
 	    Pi_plus += (Trace(tmp) + tmp) * (1.-fmatrixf[mbar][j2]) * kernel;
 	  }
 	}
@@ -281,7 +300,7 @@ vector<vector<MATRIX<complex<double>,NF,NF> > > my_interact
 
       dfdr[m][i] += Pi_plus *(1.-fmatrixf[m][i]) + (1.-fmatrixf[m][i])*Pi_plus ;
       dfdr[m][i] -= Pi_minus*    fmatrixf[m][i]  +     fmatrixf[m][i] *Pi_minus;
-    }
+    } // end loop over i
   }
   return dfdr;
 }
