@@ -53,12 +53,12 @@ double Vmu(double rho, double Ye){ return 0.;}
 
 void getP(const double r,
 	  const vector<vector<MATRIX<complex<double>,NF,NF> > >& U0,
-	  const vector<vector<MATRIX<complex<double>,NF,NF> > >& fmatrixf,
+	  const vector<vector<MATRIX<complex<double>,NF,NF> > >& fmatrixf0,
 	  vector<MATRIX<complex<double>,NF,NF> >& pmatrixm0matter){
 
   for(int i=0;i<=NE-1;i++){
     pmatrixm0matter[i] = Adjoint(U0[matter][i])
-      * (fmatrixf[matter][i] - Conjugate(fmatrixf[antimatter][i]) )
+      * (fmatrixf0[matter][i] - Conjugate(fmatrixf0[antimatter][i]) )
       * U0[matter][i];
     pmatrixm0matter[i] *= M_SQRT2*cgs::constants::GF /* erg cm^3*/
       * 4.*M_PI*nu[i]*nu[i]*dnu[i]/*Hz^3*/ / pow(cgs::constants::c,3)/*cm^3 Hz^3*/;

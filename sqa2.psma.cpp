@@ -63,7 +63,6 @@ using std::vector;
 #include "headers/adiabatic basis.h"
 #include "headers/jacobians.h"
 #include "headers/misc.h"
-#include "headers/update.h"
 #include "headers/interact.h"
 #include "headers/nulib_interface.h"
 
@@ -243,8 +242,10 @@ int main(int argc, char *argv[]){
     // density matrices at initial point, rhomatrixm0 - but not rhomatrixf0
     // will be updated whenever discontinuities are crossed and/or S is reset
     vector<MATRIX<complex<double>,NF,NF> > pmatrixm0matter(NE);
+    vector<vector<MATRIX<complex<double>,NF,NF> > > fmatrixf0(NM);
+    fmatrixf0[matter]=fmatrixf0[antimatter]=vector<MATRIX<complex<double>,NF,NF> >(NE);
     vector<vector<MATRIX<complex<double>,NF,NF> > > fmatrixf(NM);
-    fmatrixf[matter]=fmatrixf[antimatter]=vector<MATRIX<complex<double>,NF,NF> >(NE);
+    fmatrixf0[matter]=fmatrixf0[antimatter]=vector<MATRIX<complex<double>,NF,NF> >(NE);
 
     // yzhu14 density/potential matrices art rmin
     double mixing;
@@ -253,9 +254,9 @@ int main(int argc, char *argv[]){
     // ***************************************
     // quantities needed for the calculation *
     // ***************************************
-    double r,r0,dr,drmin;
-    double maxerror,increase=3.;
-    bool repeat, finish, resetflag, output;
+    double r,r0,dr,r_interact_last;
+    double maxerror,interact_error,increase=3.;
+    bool repeat, finish, resetflag;
     int counterout,step;
     
     // comment out if not following as a function of r
@@ -265,7 +266,7 @@ int main(int argc, char *argv[]){
     int do_oscillate, do_interact;
     fin>>do_oscillate;
     fin>>do_interact;
-    initialize(fmatrixf,0,rho,temperature,Ye, mixing, do_interact);
+    initialize(fmatrixf0,0,rho,temperature,Ye, mixing, do_interact);
     
     // ***************************************
     // variables followed as a function of r *
@@ -276,11 +277,6 @@ int main(int argc, char *argv[]){
     vector<vector<vector<vector<double> > > > 
       Y0(NM,vector<vector<vector<double> > >(NE,vector<vector<double> >(NS,vector<double>(NY))));
     
-    // cofactor matrices
-    vector<vector<vector<MATRIX<complex<double>,NF,NF> > > > C=C0;;
-    // mixing matrix prefactors
-    vector<vector<vector<vector<double> > > > A=A0;
-        
     // ************************
     // Runge-Kutta quantities *
     // ************************
@@ -294,7 +290,6 @@ int main(int argc, char *argv[]){
     
     // temporaries
     MATRIX<complex<double>,NF,NF> SSMSW,SSSI,SThisStep;
-    vector<vector<MATRIX<complex<double>,NF,NF> > > fmatrixf0(NM);
     vector<vector<MATRIX<complex<double>,NF,NF> > > ftmp0, dfdr0, dfdr1;
 
     // **********************
@@ -308,33 +303,24 @@ int main(int argc, char *argv[]){
       // initialize at beginning of every domain *
       // *****************************************
       r=0;
+      r_interact_last = 0;
       dr=1e-3*cgs::units::cm;
-      drmin=4.*r*numeric_limits<double>::epsilon();
-      
+
+      vector<vector<double> > YIdentity(NS,vector<double>(NY));
+      YIdentity[msw][0] = YIdentity[si][0] = M_PI/2.;
+      YIdentity[msw][1] = YIdentity[si][1] = M_PI/2.;
+      YIdentity[msw][2] = YIdentity[si][2] = 0.;
+      YIdentity[msw][3] = YIdentity[si][3] = 1.; // The determinant of the S matrix
+      YIdentity[msw][4] = YIdentity[si][4] = 0.;
+      YIdentity[msw][5] = YIdentity[si][5] = 0.;
+
       for(state m=matter;m<=antimatter;m++)
-	for(int i=0;i<=NE-1;i++){
-	  Y0[m][i][msw][0] = Y0[m][i][si][0] = M_PI/2.;
-	  Y0[m][i][msw][1] = Y0[m][i][si][1] = M_PI/2.;
-	  Y0[m][i][msw][2] = Y0[m][i][si][2] = 0.;
-	  Y0[m][i][msw][3] = Y0[m][i][si][3] = 1.; // The determinant of the S matrix
-	  Y0[m][i][msw][4] = Y0[m][i][si][4] = 0.;
-	  Y0[m][i][msw][5] = Y0[m][i][si][5] = 0.;
-	}
-      Y=Y0;
-      
-      // *************************************************
-      // comment out if not following as a function of r *
-      // *************************************************
-	
-      finish=output=false;
+	for(int i=0;i<=NE-1;i++)
+	  Y[m][i] = YIdentity;
+      finish=false;
       counterout=1;
+      fmatrixf = fmatrixf0;
       Outputvsr(foutf,r, fmatrixf);
-	
-      for(state m=matter; m<=antimatter; m++)
-	for(int i=0; i<NE; i++)
-	  for(flavour f1=e; f1<=mu; f1++)
-	    for(flavour f2=e; f2<=mu; f2++)
-	      assert(fmatrixf[m][i][f1][f2] == fmatrixf[m][i][f1][f2]);
       
       // ***********************
       // start the loop over r *
@@ -349,8 +335,8 @@ int main(int argc, char *argv[]){
 	  double coeff = 4.*M_PI / pow(cgs::constants::c,3);
 	  for(int i=0; i<NE; i++){
 	    for(flavour f1=e; f1<=mu; f1++){
-	      n    += real(fmatrixf[    matter][i][f1][f1]) * nu[i]*nu[i]*dnu[i]*coeff;
-	      nbar += real(fmatrixf[antimatter][i][f1][f1]) * nu[i]*nu[i]*dnu[i]*coeff;
+	      n    += real(fmatrixf0[    matter][i][f1][f1]) * nu[i]*nu[i]*dnu[i]*coeff;
+	      nbar += real(fmatrixf0[antimatter][i][f1][f1]) * nu[i]*nu[i]*dnu[i]*coeff;
 	    }
 	  }
 	  if(r==0){
@@ -365,18 +351,19 @@ int main(int argc, char *argv[]){
 	  
 	// save initial values in case of repeat
 	r0=r;
-	C0=C;
-	A0=A;
-	fmatrixf0 = fmatrixf;
-	getP(r,U0,fmatrixf,pmatrixm0matter);
+	Y0=Y;
+	getP(r,U0,fmatrixf0,pmatrixm0matter);
 
 	// beginning of RK section
 	do{ 
 	  repeat=false;
 	  maxerror=0.;
+	  interact_error=0;
 
 	  if(do_oscillate){
+
 	    // RK integration for oscillation
+	    // if potential changes with r, update potential inside rk loop
 	    for(int k=0;k<=NRK-1;k++){
 	      r=r0+AA[k]*dr;
 	      Y=Y0;
@@ -387,17 +374,14 @@ int main(int argc, char *argv[]){
 		      for(int l=0;l<=k-1;l++)
 			Y[m][i][x][j] += BB[k][l] * Ks[l][m][i][x][j];
 
-	      K(r,dr,rho,Ye,pmatrixm0matter,Y,C,A,Ks[k]);
+	      K(r,dr,rho,Ye,pmatrixm0matter,Y,C0,A0,Ks[k]);
 	    }
 	  
 	    // increment all quantities from oscillation
-	    getP(r0+dr,U0,fmatrixf,pmatrixm0matter);
 	    Y=Y0;
-	    for(state m=matter;m<=antimatter;m++){
-	      for(int i=0;i<=NE-1;i++){
-
-		// integrate Y
-		for(solution x=msw;x<=si;x++){
+	    for(state m=matter;m<=antimatter;m++)
+	      for(int i=0;i<=NE-1;i++)
+		for(solution x=msw;x<=si;x++)
 		  for(int j=0;j<=NY-1;j++){
 		    double Yerror = 0.;
 		    for(int k=0;k<=NRK-1;k++){
@@ -409,83 +393,99 @@ int main(int argc, char *argv[]){
 		    }
 		    maxerror = max( maxerror, fabs(Yerror) );
 		  }
-		}
-	      
-		// convert fmatrix from flavor basis to mass basis, oscillate, convert back
-		SSMSW = W(Y[m][i][msw])*B(Y[m][i][msw]);
-		SSSI  = W(Y[m][i][si ])*B(Y[m][i][si ]);
-		SThisStep = U0[m][i] * SSMSW*SSSI * Adjoint(U0[m][i]);
-		fmatrixf[m][i] = MATRIX<complex<double>,NF,NF>
-		  (SThisStep * fmatrixf[m][i] * Adjoint(SThisStep));
-	      }
-	    }
-	    Y=Y0;
-	    C=UpdateC(r,rho,Ye);
-	    A=UpdateA(C,C0,A0);
+
 	  }
 	  r=r0+dr;
-
+	  // convert fmatrix from flavor basis to mass basis, oscillate, convert back
+	  for(state m=matter; m<=antimatter; m++)
+	    for(int i=0; i<NE; i++){	    
+	      SSMSW = W(Y[m][i][msw])*B(Y[m][i][msw]);
+	      SSSI  = W(Y[m][i][si ])*B(Y[m][i][si ]);
+	      SThisStep = U0[m][i] * SSMSW*SSSI * Adjoint(U0[m][i]);
+	      fmatrixf[m][i] = SThisStep * fmatrixf0[m][i] * Adjoint(SThisStep);
+	    }
+	  
 	  if(do_interact){
+		
 	    // interact with the matter
 	    // if fluid changes with r, update opacities here, too
-	    dfdr0 = my_interact(fmatrixf, rho, temperature, Ye);
+	    double dr_interact = (r-r_interact_last);
 	    ftmp0 = fmatrixf;
+	    dfdr0 = my_interact(fmatrixf, rho, temperature, Ye);
 	    for(state m=matter; m<=antimatter; m++)
 	      for(int i=0; i<NE; i++)
-		for(flavour f1=e; f1<=mu; f1++)
-		  for(flavour f2=e; f2<=mu; f2++)
-		    ftmp0[m][i][f1][f2] += dfdr0[m][i][f1][f2] * dr;
+		ftmp0[m][i] += dfdr0[m][i] * dr_interact;
 	    dfdr1 = my_interact(ftmp0, rho, temperature, Ye);
+	    for(state m=matter; m<=antimatter; m++)
+	      for(int i=0; i<NE; i++)
+		fmatrixf[m][i] += (dfdr0[m][i] + dfdr1[m][i])*0.5 * dr_interact;
+
+	    // get interact error
 	    for(state m=matter; m<=antimatter; m++)
 	      for(int i=0; i<NE; i++){
 		double trace = real(fmatrixf[m][i][e][e]+fmatrixf[m][i][mu][mu]);
 		for(flavour f1=e; f1<=mu; f1++)
-		  for(flavour f2=e; f2<=mu; f2++){
-		    fmatrixf[m][i][f1][f2] += 0.5*dr
-		      * (dfdr0[m][i][f1][f2] + dfdr1[m][i][f1][f2]);
-		    maxerror = max(fabs(ftmp0[m][i][f1][f2]-fmatrixf[m][i][f1][f2])/trace,
-				   maxerror);
-		  }
+		  for(flavour f2=e; f2<=mu; f2++)
+		    interact_error = max(fabs(ftmp0[m][i][f1][f2]-fmatrixf[m][i][f1][f2])/trace,interact_error);
 	      }
 	  }
 	  
-	  // decide whether to accept step, if not adjust step size
+	  // decide whether to accept step, if not adjust step size and reset variables
+	  maxerror = max(maxerror, interact_error);
 	  if(maxerror>accuracy){
 	    dr *= 0.9 * pow(accuracy/maxerror, 1./(NRKOrder-1.));
-	    if(dr > drmin) repeat=true;
-	  }
-	  if(maxerror>0)
-	    dr = min(dr*pow(accuracy/maxerror,1./max(1,NRKOrder)),increase*dr);
-	  else dr *= increase;
-	  drmin = 4.*r*numeric_limits<double>::epsilon();
-	  dr = max(dr,drmin);
-	  if(r+dr > rmax) dr = rmax-r;
-	  
-	  // reset integration variables to those at beginning of step
-	  if(repeat==true){
+	    repeat=true;
 	    r=r0;
-	    C=C0;
-	    A=A0;
-	    fmatrixf = fmatrixf0;
+	    Y=Y0;
 	  }
-	  
+	  else{
+	    dr *= increase;
+	    if(maxerror>0) dr *= min( 1.0, pow(accuracy/maxerror,1./max(1,NRKOrder))/increase );
+	  }
+	  dr = max(dr, 4.*r*numeric_limits<double>::epsilon());
+	  dr = min(dr, rmax-r);
+
 	}while(repeat==true); // end of RK section
 
 
-	// comment out if not following as a function of r
-	if(r>=rmax){
-	  finish=true;
-	  output=true;
-	}
-	if(counterout==step){
-	  output=true;
-	  counterout=1;
+	// update fmatrixf0 if necessary
+	for(state m=matter;m<=antimatter;m++) for(int i=0;i<=NE-1;i++){
+	    SSMSW = W(Y[m][i][msw])*B(Y[m][i][msw]); 
+	    SSSI  = W(Y[m][i][si ])*B(Y[m][i][si ]); 
+	    
+	    // test that the MSW S matrix is close to diagonal
+	    // test the SI S matrix is close to diagonal
+	    // test amount of interaction error accumulated
+	    if(norm(SSMSW[0][0])+0.1<norm(SSMSW[0][1]) or
+	       norm(SSSI [0][0])+0.1<norm(SSSI [0][1]) or
+	       interact_error >= 0.1*accuracy or true){
+	      cout << "reset!" << endl;
+	      cout.flush();
+	      assert(interact_error <= accuracy);
+	      r_interact_last = r;
+	      fmatrixf0[m][i] = fmatrixf[m][i];
+	      Y[m][i] = YIdentity;
+	    }
+	    else{ // take modulo 2 pi of phase angles
+	      Y[m][i][msw][2]=fmod(Y[m][i][msw][2],M_2PI);
+	      Y[m][i][si ][2]=fmod(Y[m][i][si ][2],M_2PI);
+	      
+	      double ipart;
+	      Y[m][i][msw][4]=modf(Y[m][i][msw][4],&ipart);
+	      Y[m][i][msw][5]=modf(Y[m][i][msw][5],&ipart);
+	      
+	      Y[m][i][si][4]=modf(Y[m][i][si][4],&ipart);
+	      Y[m][i][si][5]=modf(Y[m][i][si][5],&ipart);
+	    }
+	  }
+      
+	// output to file
+	if(r>=rmax) finish=true;
+	if(counterout==step or finish){
+	  Outputvsr(foutf,r,fmatrixf);
+	  counterout = 1;
 	}
 	else counterout++;
-	if(output==true || finish==true){
-	  Outputvsr(foutf,r,fmatrixf);
-	  output=false;
-	}
 
       } while(finish==false);
 
