@@ -80,10 +80,12 @@ int main(int argc, char *argv[]){
   const double temperature = get_parameter<double>(fin,"temperature"); // MeV
   const string outputfilename = get_parameter<string>(fin,"outputfilename");
   const double rmax = get_parameter<double>(fin,"tmax") * cgs::constants::c; // cm
+  const double dr0  = get_parameter<double>(fin,"dt0")  * cgs::constants::c; // cm
   const double accuracy = get_parameter<double>(fin,"accuracy");
   const double increase = get_parameter<double>(fin,"increase"); // factor by which timestep increases if small error
   const double mixing = get_parameter<double>(fin,"mixing");
-  const int step = get_parameter<int>(fin,"step");
+  const int step_output = get_parameter<int>(fin,"step_output");
+  const int step_interact = get_parameter<int>(fin,"step_interact");
   const int do_oscillate = get_parameter<int>(fin,"do_oscillate");
   const int do_interact = get_parameter<int>(fin,"do_interact");
   cout.flush();
@@ -175,10 +177,6 @@ int main(int argc, char *argv[]){
   initialize(fmatrixf0,eas,0,rho,temperature,Ye, mixing, do_interact);
     
   // ***************************************
-  // quantities needed for the calculation *
-  // ***************************************
-    
-  // ***************************************
   // variables followed as a function of r *
   // ***************************************
   vector<vector<vector<vector<double> > > > 
@@ -205,21 +203,19 @@ int main(int argc, char *argv[]){
   // start of calculation *
   // **********************
     
-  cout << "t(s)  dt(s)  n_nu(1/ccm)  n_nubar(1/ccm) n_nu-n_nubar(1/ccm)" << endl;
-  cout.flush();
       
   // *****************************************
   // initialize at beginning of every domain *
   // *****************************************
   double r=0;
   double r_interact_last = 0;
-  double dr=1e-3*cgs::units::cm;
+  double dr = dr0;
 
   for(state m=matter;m<=antimatter;m++)
     for(int i=0;i<=eas.ng-1;i++)
       Y[m][i] = YIdentity;
   bool finish=false;
-  int counterout=1;
+  int counter=1;
   fmatrixf = fmatrixf0;
   Outputvsr(foutf,r, fmatrixf);
       
@@ -243,10 +239,11 @@ int main(int argc, char *argv[]){
       if(r==0){
 	n0=n;
 	nbar0=nbar;
+	cout << "t(s) \t dt(s) \t n_nu("<< n0<<"/ccm) \t n_nubar("<<nbar0<<"/ccm) \t n_nu-n_nubar("<<n0-nbar0<<"/ccm)" << endl;
       }
-      cout << r/cgs::constants::c << " ";
-      cout << dr/cgs::constants::c << " ";
-      cout << n/n0 << " " << nbar/nbar0 << " " << (n-nbar)/(n0-nbar0) << endl;
+      cout << r/cgs::constants::c << "\t";
+      cout << dr/cgs::constants::c << "\t";
+      cout << n/n0 << "\t" << nbar/nbar0 << "\t" << (n-nbar)/(n0-nbar0) << endl;
       cout.flush();
     }
 	  
@@ -308,7 +305,7 @@ int main(int argc, char *argv[]){
 	  fmatrixf[m][i] = SThisStep * fmatrixf0[m][i] * Adjoint(SThisStep);
 	}
 	  
-      if(do_interact){
+      if(do_interact && counter%step_interact==0){
 		
 	// interact with the matter
 	// if fluid changes with r, update opacities here, too
@@ -382,11 +379,9 @@ int main(int argc, char *argv[]){
       
     // output to file
     if(r>=rmax) finish=true;
-    if(counterout==step or finish){
+    if(counter%step_output==0 or finish)
       Outputvsr(foutf,r,fmatrixf);
-      counterout = 1;
-    }
-    else counterout++;
+    counter++;
   } while(finish==false);
 
   cout<<"\nFinished\n\a"; cout.flush();
