@@ -81,11 +81,11 @@ int main(int argc, char *argv[]){
   const string outputfilename = get_parameter<string>(fin,"outputfilename");
   const double rmax = get_parameter<double>(fin,"tmax") * cgs::constants::c; // cm
   const double accuracy = get_parameter<double>(fin,"accuracy");
+  const double increase = get_parameter<double>(fin,"increase"); // factor by which timestep increases if small error
   const double mixing = get_parameter<double>(fin,"mixing");
   const int step = get_parameter<int>(fin,"step");
   const int do_oscillate = get_parameter<int>(fin,"do_oscillate");
   const int do_interact = get_parameter<int>(fin,"do_interact");
-  const double increase=3.; // factor by which timestep increases if small error
   cout.flush();
 
   // load the nulib table
