@@ -116,16 +116,14 @@ void initialize(vector<vector<MATRIX<complex<double>,NF,NF> > >& fmatrixf,
 //===================//
 // Vacuum Potentials //
 //===================//
-double deltaV(const double E){ // erg
-  return abs(dm21)*cgs::constants::c4 / (2.*E);
-}
-
-void set_kV(vector<vector<double> >& kV){
+vector<vector<double> > set_kV(){
   assert(NF==2);
+  vector<vector<double> > kV = vector<vector<double> >(NE,vector<double>(NF));
   for(int i=0;i<NE;i++){
-    kV[i][0] = m1*m1 * cgs::constants::c4 /2./E[i];
-    kV[i][1] = kV[i][0] + deltaV(E[i]);
+    kV[i][0] = m1*m1             * cgs::constants::c4 /2./E[i];
+    kV[i][1] = (kV[i][0] + dm21) * cgs::constants::c4 /2./E[i];
   }
+  return kV;
 }
 
 //=============================//

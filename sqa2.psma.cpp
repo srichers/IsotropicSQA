@@ -57,7 +57,6 @@ using std::vector;
 // headers
 #include "headers/matrix.h"
 #include "headers/parameters.h"
-#include "headers/flavour basis.h"
 #include "headers/eigenvalues.h"
 #include "headers/mixing angles.h"
 #include "headers/adiabatic basis.h"
@@ -81,8 +80,6 @@ int main(int argc, char *argv[]){
     const double temperature = get_parameter<double>(fin,"temperature"); // MeV
     const string outputfilename = get_parameter<string>(fin,"outputfilename");
     const double rmax = get_parameter<double>(fin,"tmax") * cgs::constants::c; // cm
-    dm21 = get_parameter<double>(fin,"dm21") *cgs::units::eV*cgs::units::eV/cgs::constants::c4; // g^2
-    theta12V = get_parameter<double>(fin,"theta12V") * M_PI/180.; // rad
     const double accuracy = get_parameter<double>(fin,"accuracy");
     const double mixing = get_parameter<double>(fin,"mixing");
     const int step = get_parameter<int>(fin,"step");
@@ -93,14 +90,6 @@ int main(int argc, char *argv[]){
 
     // load the nulib table
     eas = EAS(nulibfilename, eosfilename);
-    
-    // set some mixing variables
-    m1=0. * cgs::units::eV/cgs::constants::c2; // g
-    alphaV[0]=0.;
-    alphaV[1]=0.;
-    betaV[0]=0.;
-    c12V = cos(theta12V);
-    s12V = sin(theta12V);
     
     // set up output file
     ofstream foutf;
@@ -125,19 +114,14 @@ int main(int argc, char *argv[]){
 
     // vectors of energies and vacuum eigenvalues
     set_Ebins(E);
-    kV = vector<vector<double> >(NE,vector<double>(NF));
-    set_kV(kV);
-
+    const vector<vector<double> > kV = set_kV();
+    
     // determine eigenvalue ordering
     if(kV[0][1]>kV[0][0]){
-      a1=-1;
-      a2=+1;
       cout<<"\n\nNormal hierarchy" << endl;
     }
     else{ 
       if(kV[0][1]<kV[0][0]){
-	a1=+1; 
-	a2=-1; 
 	cout<<"\n\nInverted hierarchy" << endl;
       }
       else{ 
@@ -146,19 +130,11 @@ int main(int argc, char *argv[]){
       }
     }
     
-    // vaccum mixing matrices and Hamiltonians
-    HfV[matter] = vector<MATRIX<complex<double>,NF,NF> >(NE);
-    HfV[antimatter] = vector<MATRIX<complex<double>,NF,NF> >(NE);
-    Evaluate_UV();    
-    Evaluate_HfV();
-    
-    // cofactor matrices in vacuum
-    CV=vector<vector<MATRIX<complex<double>,NF,NF> > >(NE,vector<MATRIX<complex<double>,NF,NF> >(NF));
-    Evaluate_CV();
-    
-    // mixing matrix element prefactors in vacuum
-    AV=vector<vector<vector<double> > >(NE,vector<vector<double> >(NF,vector<double>(NF)));
-    Evaluate_AV();
+    // vacuum matrices
+    vector<MATRIX<complex<double>,NF,NF> > UV = Evaluate_UV();
+    vector<vector<MATRIX<complex<double>,NF,NF> > > HfV = Evaluate_HfV(kV,UV);    
+    vector<vector<MATRIX<complex<double>,NF,NF> > > CV = Evaluate_CV(kV, HfV);
+    vector<vector<vector<double> > > AV = Evaluate_AV(kV,HfV,UV);
     
     // **************************************
     // quantities evaluated at inital point *
@@ -180,6 +156,7 @@ int main(int argc, char *argv[]){
       A0(NM,vector<vector<vector<double> > >(NE,vector<vector<double> >(NF,vector<double>(NF))));
     
     // mixing angles to MSW basis at initial point
+    vector<vector<MATRIX<complex<double>,NF,NF> > > U0(NM); 
     U0[matter] = vector<MATRIX<complex<double>,NF,NF> >(NE);
     U0[antimatter] = vector<MATRIX<complex<double>,NF,NF> >(NE);
     
@@ -330,7 +307,7 @@ int main(int argc, char *argv[]){
 		      for(int l=0;l<=k-1;l++)
 			Y[m][i][x][j] += BB[k][l] * Ks[l][m][i][x][j];
 
-	      K(r,dr,rho,Ye,pmatrixm0matter,Y,C0,A0,Ks[k]);
+	      K(r,dr,rho,Ye,pmatrixm0matter,HfV,Y,C0,A0,Ks[k]);
 	    }
 	  
 	    // increment all quantities from oscillation
