@@ -107,11 +107,6 @@ int main(int argc, char *argv[]){
   foutf << endl;
   foutf.flush();
     
-    
-  // *************************************************
-  // set up global variables defined in parameters.h *
-  // *************************************************
-
   // vectors of energies and vacuum eigenvalues
   const vector<vector<double> > kV = set_kV(eas.E);
   const vector<MATRIX<complex<double>,NF,NF> > UV = Evaluate_UV();
@@ -182,8 +177,6 @@ int main(int argc, char *argv[]){
   // ***************************************
   // quantities needed for the calculation *
   // ***************************************
-  double maxerror,interact_error;
-  bool repeat, finish, resetflag;
     
   // ***************************************
   // variables followed as a function of r *
@@ -192,7 +185,7 @@ int main(int argc, char *argv[]){
     Y(NM,vector<vector<vector<double> > >(eas.ng,vector<vector<double> >(NS,vector<double>(NY))));
   vector<vector<vector<vector<double> > > > 
     Y0(NM,vector<vector<vector<double> > >(eas.ng,vector<vector<double> >(NS,vector<double>(NY))));
-    
+  
   // ************************
   // Runge-Kutta quantities *
   // ************************
@@ -222,18 +215,10 @@ int main(int argc, char *argv[]){
   double r_interact_last = 0;
   double dr=1e-3*cgs::units::cm;
 
-  vector<vector<double> > YIdentity(NS,vector<double>(NY));
-  YIdentity[msw][0] = YIdentity[si][0] = M_PI/2.;
-  YIdentity[msw][1] = YIdentity[si][1] = M_PI/2.;
-  YIdentity[msw][2] = YIdentity[si][2] = 0.;
-  YIdentity[msw][3] = YIdentity[si][3] = 1.; // The determinant of the S matrix
-  YIdentity[msw][4] = YIdentity[si][4] = 0.;
-  YIdentity[msw][5] = YIdentity[si][5] = 0.;
-
   for(state m=matter;m<=antimatter;m++)
     for(int i=0;i<=eas.ng-1;i++)
       Y[m][i] = YIdentity;
-  finish=false;
+  bool finish=false;
   int counterout=1;
   fmatrixf = fmatrixf0;
   Outputvsr(foutf,r, fmatrixf);
@@ -271,8 +256,10 @@ int main(int argc, char *argv[]){
     getP(r,U0,fmatrixf0,eas.nu,eas.dnu,pmatrixm0matter);
 
     // beginning of RK section
-    do{ 
-      repeat=false;
+    double maxerror,interact_error;
+    bool repeat;
+    do{
+      repeat = false;
       maxerror=0.;
       interact_error=0;
 
@@ -360,9 +347,7 @@ int main(int argc, char *argv[]){
       }
       dr = max(dr, 4.*r*numeric_limits<double>::epsilon());
       dr = min(dr, rmax-r);
-
     }while(repeat==true); // end of RK section
-
 
     // update fmatrixf0 if necessary
     for(state m=matter;m<=antimatter;m++) for(int i=0;i<=eas.ng-1;i++){
@@ -374,7 +359,7 @@ int main(int argc, char *argv[]){
 	// test amount of interaction error accumulated
 	if(norm(SSMSW[0][0])+0.1<norm(SSMSW[0][1]) or
 	   norm(SSSI [0][0])+0.1<norm(SSSI [0][1]) or
-	   interact_error >= 0.1*accuracy or true){
+	   interact_error >= 0.1*accuracy){
 	  cout << "reset!" << endl;
 	  cout.flush();
 	  assert(interact_error <= accuracy);
@@ -402,7 +387,6 @@ int main(int argc, char *argv[]){
       counterout = 1;
     }
     else counterout++;
-
   } while(finish==false);
 
   cout<<"\nFinished\n\a"; cout.flush();

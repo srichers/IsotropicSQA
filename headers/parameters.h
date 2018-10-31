@@ -40,6 +40,7 @@ solution operator++(solution &n,int){ solution tmp=n; n=(solution)( (int)n+1 ); 
 
 // number of parametrs needed to describe neutrino S matrix
 const int NY=6; 
+const vector<vector<double> > YIdentity(NS, vector<double>{M_PI/2., M_PI/2., 0., 1., 0., 0.} );
 
 const double M_2PI = 2.*M_PI;
 const complex<double> I = 1i;
