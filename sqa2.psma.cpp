@@ -114,26 +114,10 @@ int main(int argc, char *argv[]){
 
   // vectors of energies and vacuum eigenvalues
   const vector<vector<double> > kV = set_kV(eas.E);
-    
-  // determine eigenvalue ordering
-  if(kV[0][1]>kV[0][0]){
-    cout<<"\n\nNormal hierarchy" << endl;
-  }
-  else{ 
-    if(kV[0][1]<kV[0][0]){
-      cout<<"\n\nInverted hierarchy" << endl;
-    }
-    else{ 
-      cout<<endl<<endl<<"Neither normal or Inverted"<<endl; 
-      abort();
-    }
-  }
-    
-  // vacuum matrices
-  vector<MATRIX<complex<double>,NF,NF> > UV = Evaluate_UV();
-  vector<vector<MATRIX<complex<double>,NF,NF> > > HfV = Evaluate_HfV(kV,UV);
-  vector<vector<MATRIX<complex<double>,NF,NF> > > CV = Evaluate_CV(kV, HfV);
-  vector<vector<vector<double> > > AV = Evaluate_AV(kV,HfV,UV);
+  const vector<MATRIX<complex<double>,NF,NF> > UV = Evaluate_UV();
+  const vector<vector<MATRIX<complex<double>,NF,NF> > > HfV = Evaluate_HfV(kV,UV);
+  const vector<vector<MATRIX<complex<double>,NF,NF> > > CV = Evaluate_CV(kV, HfV);
+  const vector<vector<vector<double> > > AV = Evaluate_AV(kV,HfV,UV);
     
   // **************************************
   // quantities evaluated at inital point *
