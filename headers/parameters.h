@@ -66,11 +66,6 @@ const double dm21 = 2.43e-3/*eV^2*/ *cgs::units::eV*cgs::units::eV/cgs::constant
 const double a1 = dm21>0 ? -1. : +1.; // sign of eigenvalue 1 of vacuum Hamiltonian
 const double a2 = dm21>0 ? +1. : -1.; // sign of eigenvalue 2 of vacuum Hamiltonian
 
-// number of energy bins, min and max energy
-int NE;
-vector<double> E, nu;
-vector<double> dnu;
-
 // mixing angles
 const double theta12V = 9. * M_PI/180.; // rad
 const double c12V = cos(theta12V);

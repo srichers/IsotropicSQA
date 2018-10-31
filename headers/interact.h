@@ -28,39 +28,24 @@
 #include "nulib_interface.h"
 #include "isospin.h"
 
-//=======//
-// Ebins //
-//=======//
-void set_Ebins(vector<double>& E){
-  NE = __nulibtable_MOD_nulibtable_number_groups;
-  assert(NE > 0);
-  E.resize(NE);
-  nu.resize(NE);
-  dnu.resize(NE);
-  cout << endl;
-  cout<<"NE="<<NE << endl;
-  for(int i=0;i<NE;i++){
-    E[i]            = __nulibtable_MOD_nulibtable_energies[i]*1e6*cgs::units::eV; // erg
-    nu[i]           = E[i] / (2.*M_PI*cgs::constants::hbar); // Hz
-    double nubottom = __nulibtable_MOD_nulibtable_ebottom [i]*1e6*cgs::units::eV / (2.*M_PI*cgs::constants::hbar); // Hz
-    double nutop    = __nulibtable_MOD_nulibtable_etop    [i]*1e6*cgs::units::eV / (2.*M_PI*cgs::constants::hbar); // Hz
-    dnu[i]          =     nutop    -     nubottom   ;
-    cout << E[i]/(1.e6*cgs::units::eV) << " ";
-  }
-  cout.flush();
-}
-
 //============//
 // Initialize //
 //============//
 void initialize(vector<vector<MATRIX<complex<double>,NF,NF> > >& fmatrixf,
-		double r, double rho, double T, double Ye, double mixing, int do_interact){
+		EAS& eas,
+		const double r,
+		const double rho,
+		const double T,
+		const double Ye,
+		const double mixing,
+		const int do_interact){
   // T should be MeV
   cout << "Setting initial data." << endl;
   cout << "rho = " << rho << " g/ccm" << endl;
   cout << "T = " << T << " MeV" << endl;
   cout << "Ye = " << Ye << endl;
   eas.set(rho,T,Ye,do_interact);
+  const unsigned NE = fmatrixf.size();
   
   for(int i=0; i<NE; i++){
     for(state m=matter; m<=antimatter; m++)
@@ -94,8 +79,8 @@ void initialize(vector<vector<MATRIX<complex<double>,NF,NF> > >& fmatrixf,
       if(eas.do_pair){
       	double pair_emis = 0;
       	for(int j=0; j<NE; j++){
-	  double conv_to_in_rate = exp(-(E[j]+E[i])/(eas.temperature*1e6*cgs::units::eV));
-      	  pair_emis += 4.*M_PI*nu[j]*nu[j]*dnu[j]/cgs::constants::c4 * 0.5*eas.Phi0pair(is,i,j) * conv_to_in_rate;
+	  double conv_to_in_rate = exp(-(eas.E[j]+eas.E[i])/(eas.temperature*1e6*cgs::units::eV));
+      	  pair_emis += 4.*M_PI*eas.nu[j]*eas.nu[j]*eas.dnu[j]/cgs::constants::c4 * 0.5*eas.Phi0pair(is,i,j) * conv_to_in_rate;
 	}
       	cout << pair_emis << "\t";
       }
@@ -111,19 +96,6 @@ void initialize(vector<vector<MATRIX<complex<double>,NF,NF> > >& fmatrixf,
 	  assert(fmatrixf[m][i][f1][f2] == fmatrixf[m][i][f1][f2]);
 	  assert(abs(fmatrixf[m][i][f1][f2]) < 1.0);
 	}
-}
-
-//===================//
-// Vacuum Potentials //
-//===================//
-vector<vector<double> > set_kV(){
-  assert(NF==2);
-  vector<vector<double> > kV = vector<vector<double> >(NE,vector<double>(NF));
-  for(int i=0;i<NE;i++){
-    kV[i][0] = m1*m1             * cgs::constants::c4 /2./E[i];
-    kV[i][1] = (kV[i][0] + dm21) * cgs::constants::c4 /2./E[i];
-  }
-  return kV;
 }
 
 //=============================//
@@ -156,10 +128,15 @@ MATRIX<complex<double>,2,2> blocking_term0(MATRIX<double,2,2> Phi0matrix, MATRIX
   return result;
 }
 
+
+//=============//
+// MY_INTERACT //
+//=============//
 vector<vector<MATRIX<complex<double>,NF,NF> > > my_interact
   (const vector<vector<MATRIX<complex<double>,NF,NF> > >& fmatrixf,
-   const double rho, const double T, const double Ye){
+   const double rho, const double T, const double Ye, const EAS& eas){
 
+  const unsigned NE = fmatrixf.size();
   vector<vector<MATRIX<complex<double>,NF,NF> > > dfdr(2, vector<MATRIX<complex<double>,NF,NF> >(NE));
 
   // don't do anything if too sparse
@@ -209,12 +186,12 @@ vector<vector<MATRIX<complex<double>,NF,NF> > > my_interact
 	Phi0tilde = tilde_matrix(Phi0e, Phi0x);
 	Phi0 = Phi0avg - Phi0tilde;
 	block = blocking_term0(Phi0, fmatrixf[m][i], fmatrixf[m][j]);
-	conv_to_in_rate = exp((E[j]-E[i])/(eas.temperature*1e6*cgs::units::eV));
+	conv_to_in_rate = exp((eas.E[j]-eas.E[i])/(eas.temperature*1e6*cgs::units::eV));
 	for(flavour f1=e; f1<=mu; f1++){
 	  for(flavour f2=e; f2<=mu; f2++){
 	    unblock_in  = fmatrixf[m][j][f1][f2] * 0.5*Phi0   [f1][f2]*conv_to_in_rate;
 	    unblock_out = fmatrixf[m][i][f1][f2] * 0.5*Phi0avg[f1][f2];
-	    dfdr[m][i][f1][f2] += 4.*M_PI*nu[j]*nu[j]*dnu[j]/cgs::constants::c4 *
+	    dfdr[m][i][f1][f2] += 4.*M_PI*eas.nu[j]*eas.nu[j]*eas.dnu[j]/cgs::constants::c4 *
 	      (unblock_in - unblock_out - block[f1][f2]*(conv_to_in_rate - 1.));
 	  }
 	}
@@ -228,14 +205,14 @@ vector<vector<MATRIX<complex<double>,NF,NF> > > my_interact
 	  Phi0tilde = tilde_matrix(Phi0e, Phi0x);
 	  Phi0 = Phi0avg - Phi0tilde;
 	  block = blocking_term0(Phi0, fmatrixf[m][i], fmatrixf[mbar][j]);
-	  conv_to_in_rate = exp(-(E[j]+E[i])/(eas.temperature*1e6*cgs::units::eV));
+	  conv_to_in_rate = exp(-(eas.E[j]+eas.E[i])/(eas.temperature*1e6*cgs::units::eV));
 	  for(flavour f1=e; f1<=mu; f1++){
 	    for(flavour f2=e; f2<=mu; f2++){
 	      unblock_in  = ((f1==f2 ? 1. : 0.) - fmatrixf[mbar][j][f1][f2])
 		* 0.5*Phi0   [f1][f2]*conv_to_in_rate;
 	      unblock_out = fmatrixf[m][i][f1][f2]
 		* 0.5*Phi0avg[f1][f2]*conv_to_in_rate;
-	      dfdr[m][i][f1][f2] += 4.*M_PI*nu[j]*nu[j]*dnu[j]/cgs::constants::c4 *
+	      dfdr[m][i][f1][f2] += 4.*M_PI*eas.nu[j]*eas.nu[j]*eas.dnu[j]/cgs::constants::c4 *
 		(unblock_in - unblock_out + block[f1][f2]*(conv_to_in_rate - 1.));
 	    }
 	  }

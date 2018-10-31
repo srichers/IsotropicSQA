@@ -66,9 +66,11 @@ double Vmu(double rho, double Ye){ return 0.;}
 void getP(const double r,
 	  const vector<vector<MATRIX<complex<double>,NF,NF> > >& U0,
 	  const vector<vector<MATRIX<complex<double>,NF,NF> > >& fmatrixf0,
+	  const vector<double>& nu,
+	  const vector<double>& dnu,
 	  vector<MATRIX<complex<double>,NF,NF> >& pmatrixm0matter){
 
-  for(int i=0;i<=NE-1;i++){
+  for(int i=0; i<pmatrixm0matter.size(); i++){
     pmatrixm0matter[i] = Adjoint(U0[matter][i])
       * (fmatrixf0[matter][i] - Conjugate(fmatrixf0[antimatter][i]) )
       * U0[matter][i];
@@ -97,16 +99,18 @@ MATRIX<complex<double>,NF,NF> B(vector<double> y){
 //===//
 // K //
 //===//
-void K(double r,
-       double dr,
-       double rho, double Ye,
+void K(const double r,
+       const double dr,
+       const double rho,
+       const double Ye,
        const vector<MATRIX<complex<double>,NF,NF> >& pmatrixm0matter,
        const vector<vector<MATRIX<complex<double>,NF,NF> > > HfV,
-       vector<vector<vector<vector<double> > > > &Y,
-       vector<vector<vector<MATRIX<complex<double>,NF,NF> > > > &C0,
-       vector<vector<vector<vector<double> > > > &A0,
+       const vector<vector<vector<vector<double> > > > &Y,
+       const vector<vector<vector<MATRIX<complex<double>,NF,NF> > > > &C0,
+       const vector<vector<vector<vector<double> > > > &A0,
        vector<vector<vector<vector<double> > > > &K){
 
+  const unsigned NE = pmatrixm0matter.size();
   MATRIX<complex<double>,NF,NF> VfSI,VfSIbar;  // self-interaction potential
   vector<MATRIX<complex<double>,NF,NF> > VfSIE(NE); // contribution to self-interaction potential from each energy
   MATRIX<complex<double>,NF,NF> VfMSW,VfMSWbar;
@@ -260,6 +264,7 @@ void K(double r,
 //===========//
 void Outputvsr(ofstream &foutf, const double r, const vector<vector<MATRIX<complex<double>,NF,NF> > >& fmatrixf){
   foutf << r << "\t";
+  const unsigned NE = fmatrixf.size();
   for(int i=0; i<NE; i++)
     for(state m=matter; m<=antimatter; m++)
       for(flavour f1=e; f1<=mu; f1++)

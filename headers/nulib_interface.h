@@ -140,6 +140,8 @@ class EAS{
   int ns, ng, nv;
   double munue = 0./0.; /*erg*/
   double temperature = 0./0.; /*MeV*/
+  vector<double> E; // erg
+  vector<double> nu, dnu; // Hz
   vector<double> eas;
   vector<double> escat_kernel0; // out-scattering
   vector<double> escat_kernel1;
@@ -176,7 +178,23 @@ class EAS{
       pair_kernel0.resize(ns*ng*ng);
       pair_kernel1.resize(ns*ng*ng);
     }
-
+    
+    // set energy grid
+    E.resize(ng);
+    nu.resize(ng);
+    dnu.resize(ng);
+    cout << endl;
+    cout<<"NE="<<ng << endl;
+    for(int i=0;i<ng;i++){
+      E[i]            = __nulibtable_MOD_nulibtable_energies[i]*1e6*cgs::units::eV; // erg
+      nu[i]           = E[i] / (2.*M_PI*cgs::constants::hbar); // Hz
+      double nubottom = __nulibtable_MOD_nulibtable_ebottom [i]*1e6*cgs::units::eV / (2.*M_PI*cgs::constants::hbar); // Hz
+      double nutop    = __nulibtable_MOD_nulibtable_etop    [i]*1e6*cgs::units::eV / (2.*M_PI*cgs::constants::hbar); // Hz
+      dnu[i]          = nutop - nubottom   ;
+      cout << E[i]/(1.e6*cgs::units::eV) << " ";
+    }
+    cout.flush();
+    
     cout << "#   logrho range: {" << __nulibtable_MOD_nulibtable_logrho_min << "," << __nulibtable_MOD_nulibtable_logrho_max << "} g/ccm" << endl;
     cout << "#   logT   range: {" << __nulibtable_MOD_nulibtable_logtemp_min << "," << __nulibtable_MOD_nulibtable_logtemp_max << "} MeV" << endl;
     cout << "#   Ye  range: {" << __nulibtable_MOD_nulibtable_ye_min << "," << __nulibtable_MOD_nulibtable_ye_max << "}" << endl;
@@ -236,7 +254,7 @@ class EAS{
     }
   }
   
-  double get_munue(const double rho /* g/ccm */, const double temp /*MeV*/, const double ye){ // MeV
+  double get_munue(const double rho /* g/ccm */, const double temp /*MeV*/, const double ye) const{ // MeV
     double eos_variables[__nulib_MOD_total_eos_variables];
     for(int i=0; i<__nulib_MOD_total_eos_variables; i++) eos_variables[i] = 0;
     eos_variables[0] = rho;
@@ -248,7 +266,7 @@ class EAS{
     double muhat = eos_variables[13];
     return (mue-muhat);
   }
-  double get_eta(const double rho /* g/ccm */, const double temp /*MeV*/, const double ye){ // dimensionless
+  double get_eta(const double rho /* g/ccm */, const double temp /*MeV*/, const double ye) const{ // dimensionless
     double eos_variables[__nulib_MOD_total_eos_variables];
     for(int i=0; i<__nulib_MOD_total_eos_variables; i++) eos_variables[i] = 0;
     eos_variables[0] = rho;
@@ -260,34 +278,34 @@ class EAS{
     return mue/eos_variables[1];
   }
   
-  int index(int is,int ig,int iv){
+  int index(const int is,const int ig,const int iv) const{
     return is + ig*ns + iv*ns*ng;
   }
 
-  int kernel_index(int is,int igin, int igout){
+  int kernel_index(const int is,const int igin, const int igout) const{
     return is + igin*ns + igout*ns*ng;
   }
 
-  inline int nu4_kernel_index(int ik, int i1, int i3) const{
+  inline int nu4_kernel_index(const int ik, const int i1, const int i3) const{
     return i3 + ng*i1 + ng*ng*ik;
   }
-  inline int nu4_bin2(int ik, int i1, int i3) const{
+  inline int nu4_bin2(const int ik, const int i1, const int i3) const{
     return i1+i3-ik;
   }
   
-  double emis(int is,int ig){ // 1/cm/sr
+  double emis(const int is,const int ig) const{ // 1/cm/sr
     return abs(is,ig) * fermidirac(is,ig);
   }
-  double abs(int is,int ig){ // 1/cm
+  double abs(const int is,const int ig) const{ // 1/cm
     return eas[index(is,ig,1)];
   }
-  double scat(int is,int ig){ // 1/cm
+  double scat(const int is,const int ig) const{ // 1/cm
     return eas[index(is,ig,2)];
   }
-  double delta(int is,int ig){ // 1/cm
+  double delta(const int is,const int ig) const{ // 1/cm
     return (do_delta ? eas[index(is,ig,3)] : 0);
   }
-  double fermidirac(int is, int ig){
+  double fermidirac(const int is, const int ig) const{
     double mu;
     if(is==0)      mu =  munue;
     else if(is==1) mu = -munue;
@@ -297,7 +315,7 @@ class EAS{
     double result = 1./(1. + exp((E[ig]-mu)/kTerg));
     return result;
   }
-  double Phi0scat(int is,int igin, int igout){ // cm^3/s/sr
+  double Phi0scat(const int is,const int igin, const int igout) const{ // cm^3/s/sr
     double result = 0;
     if(igin == igout)
       result += scat(is,igin)
@@ -306,7 +324,7 @@ class EAS{
       result += escat_kernel0[kernel_index(is,igin,igout)];
     return result;
   }
-  double Phi1scat(int is,int igin, int igout){ // cm^3/s/sr
+  double Phi1scat(const int is,const int igin, const int igout) const{ // cm^3/s/sr
     double result = 0;
     if(igin == igout)
       result += scat(is,igin)*delta(is,igin)/3.
@@ -315,19 +333,18 @@ class EAS{
       result += escat_kernel1[kernel_index(is,igin,igout)];
     else return 0;
   }
-  double Phi0pair(int is,int igin, int igout){ // cm^3/s/sr
+  double Phi0pair(const int is,const int igin, const int igout) const{ // cm^3/s/sr
     double result = 0;
     if(do_pair)
       result += pair_kernel0[kernel_index(is,igin,igout)];
     return result;
   }
-  double Phi1pair(int is,int igin, int igout){ // cm^3/s/sr
+  double Phi1pair(const int is,const int igin, const int igout) const{ // cm^3/s/sr
     double result = 0;
     if(do_pair)
       result += pair_kernel1[kernel_index(is,igin,igout)];
     else return 0;
   }
 };
-EAS eas;
 
 #endif

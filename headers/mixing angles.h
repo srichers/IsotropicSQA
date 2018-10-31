@@ -87,9 +87,9 @@ template<> complex<double> dCdr<mu,mu>(MATRIX<complex<double>,NF,NF> dHdr,double
 // MixingMatrixFactors //
 //=====================//
 vector<vector<double> >
-MixingMatrixFactors(vector<MATRIX<complex<double>,NF,NF> > &C,
-		    vector<MATRIX<complex<double>,NF,NF> > &C0,
-		    vector<vector<double> > A0){
+MixingMatrixFactors(const vector<MATRIX<complex<double>,NF,NF> > &C,
+		    const vector<MATRIX<complex<double>,NF,NF> > &C0,
+		    const vector<vector<double> > &A0){
 
   vector<vector<double> > A(A0);
   for(int j=0;j<=NF-1;j++){
@@ -100,11 +100,28 @@ MixingMatrixFactors(vector<MATRIX<complex<double>,NF,NF> > &C,
   return A;
 }
 
+//===================//
+// Vacuum Potentials //
+//===================//
+vector<vector<double> > set_kV(const vector<double>E){
+  assert(NF==2);
+  const unsigned NE = E.size();
+  vector<vector<double> > kV(NE,vector<double>(NF));
+  for(int i=0;i<NE;i++){
+    kV[i][0] = m1*m1             * cgs::constants::c4 /2./E[i];
+    kV[i][1] = (kV[i][0] + dm21) * cgs::constants::c4 /2./E[i];
+  }
+  return kV;
+}
+
 //====================//
 // VACUUM HAMILTONIAN //
 //====================//
 vector<vector<MATRIX<complex<double>,NF,NF> > >
-  Evaluate_HfV(const vector<vector<double> >& kV, const vector<MATRIX<complex<double>,NF,NF> >& UV){
+  Evaluate_HfV(const vector<vector<double> >& kV,
+	       const vector<MATRIX<complex<double>,NF,NF> >& UV){
+
+  const unsigned NE = kV.size();
   vector<vector<MATRIX<complex<double>,NF,NF> > > HfV(NM);
   HfV[matter] = vector<MATRIX<complex<double>,NF,NF> >(NE);
   HfV[antimatter] = vector<MATRIX<complex<double>,NF,NF> >(NE);
@@ -158,6 +175,7 @@ vector<MATRIX<complex<double>,NF,NF> > Evaluate_UV(void){
 vector<vector<MATRIX<complex<double>,NF,NF> > >
   Evaluate_CV(const vector<vector<double> >& kV,
 	      const vector<vector<MATRIX<complex<double>,NF,NF> > >& HfV){
+  const unsigned NE = kV.size();
   vector<vector<MATRIX<complex<double>,NF,NF> > > CV =
     vector<vector<MATRIX<complex<double>,NF,NF> > >(NE,vector<MATRIX<complex<double>,NF,NF> >(NF));
   for(int i=0;i<=NE-1;i++){
@@ -176,6 +194,7 @@ Evaluate_AV(const vector<vector<double> >& kV,
 	    const vector<vector<MATRIX<complex<double>,NF,NF> > >& HfV,
 	    const vector<MATRIX<complex<double>,NF,NF> >& UV){
 
+  const unsigned NE = kV.size();
   vector<vector<vector<double> > > AV(NE,vector<vector<double> >(NF,vector<double>(NF)));
   
   double Delta;

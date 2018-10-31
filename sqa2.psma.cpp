@@ -89,14 +89,14 @@ int main(int argc, char *argv[]){
     cout.flush();
 
     // load the nulib table
-    eas = EAS(nulibfilename, eosfilename);
+    EAS eas(nulibfilename, eosfilename);
     
     // set up output file
     ofstream foutf;
     foutf.open((outputfilename+"/f.dat").c_str());
     foutf.precision(12);
     foutf << "# 1:r ";
-    for(int i=0; i<NE; i++)
+    for(int i=0; i<eas.ng; i++)
       for(state m=matter; m<=antimatter; m++)
 	for(flavour f1=e; f1<=mu; f1++)
 	  for(flavour f2=e; f2<=mu; f2++) {
@@ -113,8 +113,7 @@ int main(int argc, char *argv[]){
     // *************************************************
 
     // vectors of energies and vacuum eigenvalues
-    set_Ebins(E);
-    const vector<vector<double> > kV = set_kV();
+    const vector<vector<double> > kV = set_kV(eas.E);
     
     // determine eigenvalue ordering
     if(kV[0][1]>kV[0][0]){
@@ -132,7 +131,7 @@ int main(int argc, char *argv[]){
     
     // vacuum matrices
     vector<MATRIX<complex<double>,NF,NF> > UV = Evaluate_UV();
-    vector<vector<MATRIX<complex<double>,NF,NF> > > HfV = Evaluate_HfV(kV,UV);    
+    vector<vector<MATRIX<complex<double>,NF,NF> > > HfV = Evaluate_HfV(kV,UV);
     vector<vector<MATRIX<complex<double>,NF,NF> > > CV = Evaluate_CV(kV, HfV);
     vector<vector<vector<double> > > AV = Evaluate_AV(kV,HfV,UV);
     
@@ -149,18 +148,18 @@ int main(int argc, char *argv[]){
     
     // cofactor matrices at initial point - will be recycled as cofactor matrices at beginning of every step
     vector<vector<vector<MATRIX<complex<double>,NF,NF> > > > 
-      C0(NM,vector<vector<MATRIX<complex<double>,NF,NF> > >(NE,vector<MATRIX<complex<double>,NF,NF> >(NF)));
+      C0(NM,vector<vector<MATRIX<complex<double>,NF,NF> > >(eas.ng,vector<MATRIX<complex<double>,NF,NF> >(NF)));
 
     // mixing matrix element prefactors at initial point - will be recycled like C0
     vector<vector<vector<vector<double> > > > 
-      A0(NM,vector<vector<vector<double> > >(NE,vector<vector<double> >(NF,vector<double>(NF))));
+      A0(NM,vector<vector<vector<double> > >(eas.ng,vector<vector<double> >(NF,vector<double>(NF))));
     
     // mixing angles to MSW basis at initial point
     vector<vector<MATRIX<complex<double>,NF,NF> > > U0(NM); 
-    U0[matter] = vector<MATRIX<complex<double>,NF,NF> >(NE);
-    U0[antimatter] = vector<MATRIX<complex<double>,NF,NF> >(NE);
+    U0[matter] = vector<MATRIX<complex<double>,NF,NF> >(eas.ng);
+    U0[antimatter] = vector<MATRIX<complex<double>,NF,NF> >(eas.ng);
     
-    for(int i=0;i<=NE-1;i++){
+    for(int i=0;i<=eas.ng-1;i++){
       Hf0=HfV[matter][i]+VfMSW0;
       k0=k(Hf0);
       deltak0=deltak(Hf0);
@@ -189,12 +188,12 @@ int main(int argc, char *argv[]){
     
     // density matrices at initial point, rhomatrixm0 - but not rhomatrixf0
     // will be updated whenever discontinuities are crossed and/or S is reset
-    vector<MATRIX<complex<double>,NF,NF> > pmatrixm0matter(NE);
+    vector<MATRIX<complex<double>,NF,NF> > pmatrixm0matter(eas.ng);
     vector<vector<MATRIX<complex<double>,NF,NF> > > fmatrixf0(NM);
     vector<vector<MATRIX<complex<double>,NF,NF> > > fmatrixf (NM);
-    fmatrixf0[matter]=fmatrixf0[antimatter]=vector<MATRIX<complex<double>,NF,NF> >(NE);
-    fmatrixf [matter]=fmatrixf [antimatter]=vector<MATRIX<complex<double>,NF,NF> >(NE);
-    initialize(fmatrixf0,0,rho,temperature,Ye, mixing, do_interact);
+    fmatrixf0[matter]=fmatrixf0[antimatter]=vector<MATRIX<complex<double>,NF,NF> >(eas.ng);
+    fmatrixf [matter]=fmatrixf [antimatter]=vector<MATRIX<complex<double>,NF,NF> >(eas.ng);
+    initialize(fmatrixf0,eas,0,rho,temperature,Ye, mixing, do_interact);
     
     // ***************************************
     // quantities needed for the calculation *
@@ -206,9 +205,9 @@ int main(int argc, char *argv[]){
     // variables followed as a function of r *
     // ***************************************
     vector<vector<vector<vector<double> > > > 
-      Y(NM,vector<vector<vector<double> > >(NE,vector<vector<double> >(NS,vector<double>(NY))));
+      Y(NM,vector<vector<vector<double> > >(eas.ng,vector<vector<double> >(NS,vector<double>(NY))));
     vector<vector<vector<vector<double> > > > 
-      Y0(NM,vector<vector<vector<double> > >(NE,vector<vector<double> >(NS,vector<double>(NY))));
+      Y0(NM,vector<vector<vector<double> > >(eas.ng,vector<vector<double> >(NS,vector<double>(NY))));
     
     // ************************
     // Runge-Kutta quantities *
@@ -219,7 +218,7 @@ int main(int argc, char *argv[]){
     
     vector<vector<vector<vector<vector<double> > > > > 
       Ks(NRK,vector<vector<vector<vector<double> > > >
-	 (NM,vector<vector<vector<double> > >(NE,vector<vector<double> >(NS,vector<double>(NY)))));
+	 (NM,vector<vector<vector<double> > >(eas.ng,vector<vector<double> >(NS,vector<double>(NY)))));
     
     // temporaries
     MATRIX<complex<double>,NF,NF> SSMSW,SSSI,SThisStep;
@@ -248,7 +247,7 @@ int main(int argc, char *argv[]){
       YIdentity[msw][5] = YIdentity[si][5] = 0.;
 
       for(state m=matter;m<=antimatter;m++)
-	for(int i=0;i<=NE-1;i++)
+	for(int i=0;i<=eas.ng-1;i++)
 	  Y[m][i] = YIdentity;
       finish=false;
       int counterout=1;
@@ -266,10 +265,10 @@ int main(int argc, char *argv[]){
 	if(r - intkm <= dr){
 	  double n=0, nbar=0;
 	  double coeff = 4.*M_PI / pow(cgs::constants::c,3);
-	  for(int i=0; i<NE; i++){
+	  for(int i=0; i<eas.ng; i++){
 	    for(flavour f1=e; f1<=mu; f1++){
-	      n    += real(fmatrixf0[    matter][i][f1][f1]) * nu[i]*nu[i]*dnu[i]*coeff;
-	      nbar += real(fmatrixf0[antimatter][i][f1][f1]) * nu[i]*nu[i]*dnu[i]*coeff;
+	      n    += real(fmatrixf0[    matter][i][f1][f1]) * eas.nu[i]*eas.nu[i]*eas.dnu[i]*coeff;
+	      nbar += real(fmatrixf0[antimatter][i][f1][f1]) * eas.nu[i]*eas.nu[i]*eas.dnu[i]*coeff;
 	    }
 	  }
 	  if(r==0){
@@ -285,7 +284,7 @@ int main(int argc, char *argv[]){
 	// save initial values in case of repeat
 	double r0=r;
 	Y0=Y;
-	getP(r,U0,fmatrixf0,pmatrixm0matter);
+	getP(r,U0,fmatrixf0,eas.nu,eas.dnu,pmatrixm0matter);
 
 	// beginning of RK section
 	do{ 
@@ -301,7 +300,7 @@ int main(int argc, char *argv[]){
 	      r=r0+AA[k]*dr;
 	      Y=Y0;
 	      for(state m = matter; m <= antimatter; m++)
-		for(int i=0;i<=NE-1;i++)
+		for(int i=0;i<=eas.ng-1;i++)
 		  for(solution x=msw;x<=si;x++)
 		    for(int j=0;j<=NY-1;j++)
 		      for(int l=0;l<=k-1;l++)
@@ -313,7 +312,7 @@ int main(int argc, char *argv[]){
 	    // increment all quantities from oscillation
 	    Y=Y0;
 	    for(state m=matter;m<=antimatter;m++)
-	      for(int i=0;i<=NE-1;i++)
+	      for(int i=0;i<=eas.ng-1;i++)
 		for(solution x=msw;x<=si;x++)
 		  for(int j=0;j<=NY-1;j++){
 		    double Yerror = 0.;
@@ -331,7 +330,7 @@ int main(int argc, char *argv[]){
 	  r=r0+dr;
 	  // convert fmatrix from flavor basis to mass basis, oscillate, convert back
 	  for(state m=matter; m<=antimatter; m++)
-	    for(int i=0; i<NE; i++){	    
+	    for(int i=0; i<eas.ng; i++){	    
 	      SSMSW = W(Y[m][i][msw])*B(Y[m][i][msw]);
 	      SSSI  = W(Y[m][i][si ])*B(Y[m][i][si ]);
 	      SThisStep = U0[m][i] * SSMSW*SSSI * Adjoint(U0[m][i]);
@@ -344,18 +343,18 @@ int main(int argc, char *argv[]){
 	    // if fluid changes with r, update opacities here, too
 	    double dr_interact = (r-r_interact_last);
 	    ftmp0 = fmatrixf;
-	    dfdr0 = my_interact(fmatrixf, rho, temperature, Ye);
+	    dfdr0 = my_interact(fmatrixf, rho, temperature, Ye, eas);
 	    for(state m=matter; m<=antimatter; m++)
-	      for(int i=0; i<NE; i++)
+	      for(int i=0; i<eas.ng; i++)
 		ftmp0[m][i] += dfdr0[m][i] * dr_interact;
-	    dfdr1 = my_interact(ftmp0, rho, temperature, Ye);
+	    dfdr1 = my_interact(ftmp0, rho, temperature, Ye, eas);
 	    for(state m=matter; m<=antimatter; m++)
-	      for(int i=0; i<NE; i++)
+	      for(int i=0; i<eas.ng; i++)
 		fmatrixf[m][i] += (dfdr0[m][i] + dfdr1[m][i])*0.5 * dr_interact;
 
 	    // get interact error
 	    for(state m=matter; m<=antimatter; m++)
-	      for(int i=0; i<NE; i++){
+	      for(int i=0; i<eas.ng; i++){
 		double trace = real(fmatrixf[m][i][e][e]+fmatrixf[m][i][mu][mu]);
 		for(flavour f1=e; f1<=mu; f1++)
 		  for(flavour f2=e; f2<=mu; f2++)
@@ -382,7 +381,7 @@ int main(int argc, char *argv[]){
 
 
 	// update fmatrixf0 if necessary
-	for(state m=matter;m<=antimatter;m++) for(int i=0;i<=NE-1;i++){
+	for(state m=matter;m<=antimatter;m++) for(int i=0;i<=eas.ng-1;i++){
 	    SSMSW = W(Y[m][i][msw])*B(Y[m][i][msw]); 
 	    SSSI  = W(Y[m][i][si ])*B(Y[m][i][si ]); 
 	    
