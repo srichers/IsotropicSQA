@@ -25,6 +25,18 @@
 //
 */
 
+template<typename T>
+T get_parameter(ifstream& fin, const char* name){
+  stringstream line;
+  string linestring;
+  T to_set;
+  std::getline(fin, linestring);
+  line = stringstream(linestring);
+  line >> to_set;
+  cout << "PARAMETER " << name << " = " << to_set << endl;
+  return to_set;
+}
+
 double Sign(double input){
   return input>0 ? 1 : -1;
 }

@@ -70,60 +70,40 @@ using std::vector;
 // MAIN //
 //======//
 int main(int argc, char *argv[]){
-    int in=1;
-    string inputfilename;
-    ofstream foutf;
-    string outputfilename,vfilename, spectrapath, nulibfilename, eosfilename;
-    string outputfilenamestem;
-    string note;
-    
-    inputfilename=string(argv[in]);
+    string inputfilename=string(argv[1]);
     ifstream fin(inputfilename.c_str());
-    
-    // load the nulib table
-    fin>>nulibfilename;
-    cout << nulibfilename << endl;
-    fin >> eosfilename;
-    cout << eosfilename << endl;
-    eas = EAS(nulibfilename, eosfilename);
 
-    double rho, Ye, temperature/*MeV*/; // rho is the mass density
-    fin>>rho;
-    fin>>Ye;
-    fin>>temperature;
-    fin>>outputfilename;
-    outputfilenamestem = outputfilename+"/";
+    // read in all parameters
+    const string nulibfilename = get_parameter<string>(fin,"nulibfilename");
+    const string eosfilename = get_parameter<string>(fin,"eosfilename");
+    const double rho = get_parameter<double>(fin,"rho");
+    const double Ye  = get_parameter<double>(fin,"Ye");
+    const double temperature = get_parameter<double>(fin,"temperature"); // MeV
+    const string outputfilename = get_parameter<string>(fin,"outputfilename");
+    const double rmax = get_parameter<double>(fin,"tmax") * cgs::constants::c; // cm
+    dm21 = get_parameter<double>(fin,"dm21") *cgs::units::eV*cgs::units::eV/cgs::constants::c4; // g^2
+    theta12V = get_parameter<double>(fin,"theta12V") * M_PI/180.; // rad
+    const double accuracy = get_parameter<double>(fin,"accuracy");
+    const double mixing = get_parameter<double>(fin,"mixing");
+    const int step = get_parameter<int>(fin,"step");
+    const int do_oscillate = get_parameter<int>(fin,"do_oscillate");
+    const int do_interact = get_parameter<int>(fin,"do_interact");
+    const double increase=3.; // factor by which timestep increases if small error
+    cout.flush();
+
+    // load the nulib table
+    eas = EAS(nulibfilename, eosfilename);
     
-    double rmax;
-    fin>>rmax; // s
-    rmax *= cgs::constants::c; // s -> cm
-    m1=0.;
-    fin>>dm21;
-    fin>>theta12V;
-    
+    // set some mixing variables
+    m1=0. * cgs::units::eV/cgs::constants::c2; // g
     alphaV[0]=0.;
     alphaV[1]=0.;
-    
     betaV[0]=0.;
+    c12V = cos(theta12V);
+    s12V = sin(theta12V);
     
-    double accuracy;
-    fin>>accuracy;
-    fin>>note;
-
-    cout<<"\n\n*********************************************************\n";
-    cout<<"\nrho\t"<<rho;
-    cout<<"\nYe\t"<<Ye;
-    cout<<"\nT\t"<<temperature;
-    cout<<"\noutput\t"<<outputfilename;
-    cout<<"\ttmax\t"<<rmax/cgs::constants::c;
-    cout<<"\n\nm1\t"<<m1<<"\tdm21^2\t"<<dm21;
-    cout<<"\ntheta12V\t"<<theta12V;
-    cout<<"\nalpha1V\t"<<alphaV[0]<<"\talpha2V\t"<<alphaV[1];
-    cout<<"\nbeta1V\t"<<betaV[0];    
-    cout<<"\naccuracy\t"<<accuracy<<"\n";
-    cout.flush();
-    
-    // output filestreams: the arrays of ofstreams cannot use the vector container - bug in g++
+    // set up output file
+    ofstream foutf;
     foutf.open((outputfilename+"/f.dat").c_str());
     foutf.precision(12);
     foutf << "# 1:r ";
@@ -138,14 +118,6 @@ int main(int argc, char *argv[]){
     foutf << endl;
     foutf.flush();
     
-    // unit conversion to cgs
-    //Emin *= 1.*mega*cgs::units::eV;
-    //Emax *= 1.*mega*cgs::units::eV;
-    m1   *= 1.*cgs::units::eV/cgs::constants::c2;
-    dm21 *= 1.*cgs::units::eV*cgs::units::eV/cgs::constants::c4;
-    theta12V *= M_PI/180.;
-    c12V = cos(theta12V);
-    s12V = sin(theta12V);
     
     // *************************************************
     // set up global variables defined in parameters.h *
@@ -175,10 +147,9 @@ int main(int argc, char *argv[]){
     }
     
     // vaccum mixing matrices and Hamiltonians
-    Evaluate_UV();
-    
     HfV[matter] = vector<MATRIX<complex<double>,NF,NF> >(NE);
     HfV[antimatter] = vector<MATRIX<complex<double>,NF,NF> >(NE);
+    Evaluate_UV();    
     Evaluate_HfV();
     
     // cofactor matrices in vacuum
@@ -243,35 +214,20 @@ int main(int argc, char *argv[]){
     // will be updated whenever discontinuities are crossed and/or S is reset
     vector<MATRIX<complex<double>,NF,NF> > pmatrixm0matter(NE);
     vector<vector<MATRIX<complex<double>,NF,NF> > > fmatrixf0(NM);
+    vector<vector<MATRIX<complex<double>,NF,NF> > > fmatrixf (NM);
     fmatrixf0[matter]=fmatrixf0[antimatter]=vector<MATRIX<complex<double>,NF,NF> >(NE);
-    vector<vector<MATRIX<complex<double>,NF,NF> > > fmatrixf(NM);
-    fmatrixf0[matter]=fmatrixf0[antimatter]=vector<MATRIX<complex<double>,NF,NF> >(NE);
-
-    // yzhu14 density/potential matrices art rmin
-    double mixing;
-    fin>>mixing;
-
+    fmatrixf [matter]=fmatrixf [antimatter]=vector<MATRIX<complex<double>,NF,NF> >(NE);
+    initialize(fmatrixf0,0,rho,temperature,Ye, mixing, do_interact);
+    
     // ***************************************
     // quantities needed for the calculation *
     // ***************************************
-    double r,r0,dr,r_interact_last;
-    double maxerror,interact_error,increase=3.;
+    double maxerror,interact_error;
     bool repeat, finish, resetflag;
-    int counterout,step;
-    
-    // comment out if not following as a function of r
-    fin>>step;
-
-    // do we oscillate and interact?
-    int do_oscillate, do_interact;
-    fin>>do_oscillate;
-    fin>>do_interact;
-    initialize(fmatrixf0,0,rho,temperature,Ye, mixing, do_interact);
     
     // ***************************************
     // variables followed as a function of r *
     // ***************************************
-    
     vector<vector<vector<vector<double> > > > 
       Y(NM,vector<vector<vector<double> > >(NE,vector<vector<double> >(NS,vector<double>(NY))));
     vector<vector<vector<vector<double> > > > 
@@ -302,9 +258,9 @@ int main(int argc, char *argv[]){
       // *****************************************
       // initialize at beginning of every domain *
       // *****************************************
-      r=0;
-      r_interact_last = 0;
-      dr=1e-3*cgs::units::cm;
+      double r=0;
+      double r_interact_last = 0;
+      double dr=1e-3*cgs::units::cm;
 
       vector<vector<double> > YIdentity(NS,vector<double>(NY));
       YIdentity[msw][0] = YIdentity[si][0] = M_PI/2.;
@@ -318,7 +274,7 @@ int main(int argc, char *argv[]){
 	for(int i=0;i<=NE-1;i++)
 	  Y[m][i] = YIdentity;
       finish=false;
-      counterout=1;
+      int counterout=1;
       fmatrixf = fmatrixf0;
       Outputvsr(foutf,r, fmatrixf);
       
@@ -350,7 +306,7 @@ int main(int argc, char *argv[]){
 	}
 	  
 	// save initial values in case of repeat
-	r0=r;
+	double r0=r;
 	Y0=Y;
 	getP(r,U0,fmatrixf0,pmatrixm0matter);
 
