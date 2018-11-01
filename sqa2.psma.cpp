@@ -59,7 +59,6 @@ using std::vector;
 #include "headers/parameters.h"
 #include "headers/eigenvalues.h"
 #include "headers/mixing angles.h"
-#include "headers/adiabatic basis.h"
 #include "headers/jacobians.h"
 #include "headers/misc.h"
 #include "headers/interact.h"

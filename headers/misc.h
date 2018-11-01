@@ -37,7 +37,7 @@ T get_parameter(ifstream& fin, const char* name){
   return to_set;
 }
 
-double Sign(double input){
+inline double Sign(const double input){
   return input>0 ? 1 : -1;
 }
 
@@ -58,10 +58,10 @@ void RungeKuttaCashKarpParameters(int &NRK,int &NOrder,const double* &A,const do
        A=a; B=b; C=c; D=d;
       } 
 
-double Ve(double rho, double Ye){
+inline double Ve(const double rho, const double Ye){
   return (M_SQRT2*cgs::constants::GF/cgs::constants::Mp)*rho*Ye;
 }
-double Vmu(double rho, double Ye){ return 0.;}
+inline double Vmu(const double rho, const double Ye){ return 0.;}
 
 void getP(const double r,
 	  const vector<vector<MATRIX<complex<double>,NF,NF> > >& U0,
@@ -82,7 +82,7 @@ void getP(const double r,
 //===//
 // B //
 //===//
-MATRIX<complex<double>,NF,NF> B(vector<double> y){
+MATRIX<complex<double>,NF,NF> B(const vector<double>& y){
   MATRIX<complex<double>,NF,NF> s;
   double cPsi1=cos(y[0]),sPsi1=sin(y[0]), cPsi2=cos(y[1]),sPsi2=sin(y[1]), cPsi3=cos(y[2]),sPsi3=sin(y[2]);
   
@@ -94,6 +94,15 @@ MATRIX<complex<double>,NF,NF> B(vector<double> y){
   s[1][1] =  y[3]*conj(s[0][0]);
 
   return s;
+}
+
+//===//
+// W //
+//===//
+MATRIX<complex<double>,NF,NF> W(const vector<double>& Y){
+  MATRIX<complex<double>,NF,NF> w;
+  w[0][0]=exp(-I*M_2PI*Y[4]); w[1][1]=exp(-I*M_2PI*Y[5]);
+  return w;
 }
 
 //===//
@@ -258,7 +267,7 @@ void Outputvsr(ofstream &foutf, const double r, const vector<vector<MATRIX<compl
   foutf.flush();
 }
 
-void Hermitize(MATRIX<complex<double>,2,2>& M, double accuracy){
+void Hermitize(MATRIX<complex<double>,2,2>& M, const double accuracy){
   double trace = real(M[e][e] + M[mu][mu]);
   assert(trace>0);
 
@@ -290,7 +299,7 @@ void Hermitize(MATRIX<complex<double>,2,2>& M, double accuracy){
   }
 }
 
-void unitarize(MATRIX<complex<double>,2,2>& M, double accuracy){
+void unitarize(MATRIX<complex<double>,2,2>& M, const double accuracy){
   // M = ( (a, b), (-e^Iphi b*, e^Iphi a*) )
   //   = ( (a, b), (c, d) )
   double a2 = real(M[e ][e ] * conj(M[e ][e ]) );

@@ -29,9 +29,9 @@
 // U //
 //===//
 MATRIX<complex<double>,NF,NF>
-  U(vector<double> dk,
-    vector<MATRIX<complex<double>,NF,NF> > &C,
-    vector<vector<double> > A){
+  U(const vector<double>& dk,
+    const vector<MATRIX<complex<double>,NF,NF> > &C,
+    const vector<vector<double> >& A){
 
   MATRIX<complex<double>,NF,NF> u;
   double d;
@@ -60,27 +60,27 @@ MATRIX<complex<double>,NF,NF>
 //===//
 // C //
 //===//
-template<flavour a,flavour b> complex<double> C(MATRIX<complex<double>,NF,NF> H,double k);
-template<> complex<double> C<e,e>(MATRIX<complex<double>,NF,NF> H,double k){
+template<flavour a,flavour b> complex<double> C(const MATRIX<complex<double>,NF,NF>& H,const double k);
+template<> complex<double> C<e,e>(const MATRIX<complex<double>,NF,NF>& H,const double k){
   return H[mu][mu]-k;}
-template<> complex<double> C<e,mu>(MATRIX<complex<double>,NF,NF> H,double k){
+template<> complex<double> C<e,mu>(const MATRIX<complex<double>,NF,NF>& H,const double k){
   return -H[mu][e];}
-template<> complex<double> C<mu,e>(MATRIX<complex<double>,NF,NF> H,double k){
+template<> complex<double> C<mu,e>(const MATRIX<complex<double>,NF,NF>& H,const double k){
   return -H[e][mu];}
-template<> complex<double> C<mu,mu>(MATRIX<complex<double>,NF,NF> H,double k){
+template<> complex<double> C<mu,mu>(const MATRIX<complex<double>,NF,NF>& H,const double k){
   return H[e][e]-k;}
   
 //======//
 // dCdr //
 //======//
-template<flavour a,flavour b> complex<double> dCdr(MATRIX<complex<double>,NF,NF> dHdr,double dkdr);
-template<> complex<double> dCdr<e,e>(MATRIX<complex<double>,NF,NF> dHdr,double dkdr){
+template<flavour a,flavour b> complex<double> dCdr(const MATRIX<complex<double>,NF,NF>& dHdr,const double dkdr);
+template<> complex<double> dCdr<e,e>(const MATRIX<complex<double>,NF,NF>& dHdr,const double dkdr){
   return dHdr[mu][mu]-dkdr;}
-template<> complex<double> dCdr<e,mu>(MATRIX<complex<double>,NF,NF> dHdr,double dkdr){
+template<> complex<double> dCdr<e,mu>(const MATRIX<complex<double>,NF,NF>& dHdr,const double dkdr){
   return -dHdr[mu][e];}
-template<> complex<double> dCdr<mu,e>(MATRIX<complex<double>,NF,NF> dHdr,double dkdr){
+template<> complex<double> dCdr<mu,e>(const MATRIX<complex<double>,NF,NF>& dHdr,const double dkdr){
   return -dHdr[e][mu];}
-template<> complex<double> dCdr<mu,mu>(MATRIX<complex<double>,NF,NF> dHdr,double dkdr){
+template<> complex<double> dCdr<mu,mu>(const MATRIX<complex<double>,NF,NF>& dHdr,const double dkdr){
   return dHdr[e][e]-dkdr;}
 
 //=====================//
@@ -103,7 +103,7 @@ MixingMatrixFactors(const vector<MATRIX<complex<double>,NF,NF> > &C,
 //===================//
 // Vacuum Potentials //
 //===================//
-vector<vector<double> > set_kV(const vector<double>E){
+vector<vector<double> > set_kV(const vector<double>& E){
   assert(NF==2);
   const unsigned NE = E.size();
   vector<vector<double> > kV(NE,vector<double>(NF));
@@ -152,8 +152,8 @@ vector<vector<MATRIX<complex<double>,NF,NF> > >
 // CofactorMatrices //
 //==================//
 vector<MATRIX<complex<double>,NF,NF> >
-  CofactorMatrices(MATRIX<complex<double>,NF,NF> H,
-		   vector<double> k){
+  CofactorMatrices(const MATRIX<complex<double>,NF,NF>& H,
+		   const vector<double>& k){
   
   vector<MATRIX<complex<double>,NF,NF> > CC(NF);
   for(int j=0;j<=NF-1;j++){

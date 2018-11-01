@@ -28,49 +28,49 @@
 //===//
 // D //
 //===//
-double D(MATRIX<complex<double>,NF,NF> Hf){
+double D(const MATRIX<complex<double>,NF,NF>& Hf){
   return 4.*norm(Hf[e][mu]) +norm(Hf[e][e]-Hf[mu][mu]);
 }
 
 //=====//
 // f,g //
 //=====//
-double f(double x){
+inline double f(const double x){
   return 0.5*x*(1.-0.25*x*(1.-0.5*x*(1.-0.625*x)));
 }
-double g(double x){
+inline double g(const double x){
   return 0.5*x*(1.-0.75*x*(1.-0.83333333*x*(1.-0.875*x)));
 }
 
 //====//
 // k1 //
 //====//
-double k1(double T,double sqrtD){
+inline double k1(const double T,const double sqrtD){
   return 0.5*(T+a1*sqrtD);
 }
-double k1bar(double Tbar,double sqrtDbar){
+inline double k1bar(const double Tbar,const double sqrtDbar){
   return 0.5*(Tbar+a1*sqrtDbar);
 }
-double asymptotick1(double Hee,double Hmm,double x,int s){
+inline double asymptotick1(const double Hee,const double Hmm,const double x,const int s){
   return (1+a1*s)/2.*Hee +(1-a1*s)/2.*Hmm +a1*s/2.*(Hee-Hmm)*f(x);
 }
-double asymptotick1bar(double Hee,double Hmm,double x,int s){
+inline double asymptotick1bar(const double Hee,const double Hmm,const double x,const int s){
   return (1+a1*s)/2.*Hee +(1-a1*s)/2.*Hmm +a1*s/2.*(Hee-Hmm)*f(x);
 }
 
 //====//
 // k2 //
 //====//
-double k2(double T,double sqrtD){
+inline double k2(const double T,const double sqrtD){
   return 0.5*(T+a2*sqrtD);
 }
-double k2bar(double Tbar,double sqrtDbar){
+inline double k2bar(const double Tbar,const double sqrtDbar){
   return 0.5*(Tbar+a2*sqrtDbar);
 }
-double asymptotick2(double Hee,double Hmm,double x,int s){
+inline double asymptotick2(const double Hee,const double Hmm,const double x,const int s){
   return (1+a2*s)/2.*Hee +(1-a2*s)/2.*Hmm +a2*s/2.*(Hee-Hmm)*f(x);
 }
-double asymptotick2bar(double Hee,double Hmm,double x,int s){
+inline double asymptotick2bar(const double Hee,const double Hmm,const double x,const int s){
   return (1+a2*s)/2.*Hee +(1-a2*s)/2.*Hmm +a2*s/2.*(Hee-Hmm)*f(x);
 }
 
@@ -79,7 +79,7 @@ double asymptotick2bar(double Hee,double Hmm,double x,int s){
 //===//
 // k //
 //===//
-vector<double> k(MATRIX<complex<double>,NF,NF> Hf){
+vector<double> k(const MATRIX<complex<double>,NF,NF>& Hf){
   //if(4.*norm(Hf[e][mu])/norm(Hf[e][e]-Hf[mu][mu])<0.0745){ return asymptotick(Hf);}
 
   vector<double> k(NF);
@@ -90,7 +90,7 @@ vector<double> k(MATRIX<complex<double>,NF,NF> Hf){
   return k;
 }
 
-vector<double> k(double t,double sqrtd){
+vector<double> k(const double t,const double sqrtd){
   vector<double> k(NF);
   k[0]=k1(t,sqrtd);
   k[1]=k2(t,sqrtd);
@@ -100,7 +100,7 @@ vector<double> k(double t,double sqrtd){
 //======//
 // kbar //
 //======//
-vector<double> kbar(MATRIX<complex<double>,NF,NF> Hf){
+vector<double> kbar(const MATRIX<complex<double>,NF,NF>& Hf){
   //if(4.*norm(Hf[e][mu])/norm(Hf[e][e]-Hf[mu][mu])<0.0745){ return asymptotickbar(Hf);}
   
   vector<double> k(NF);
@@ -112,7 +112,7 @@ vector<double> kbar(MATRIX<complex<double>,NF,NF> Hf){
   return k;
 }
 
-vector<double> kbar(double tbar,double sqrtdbar){
+vector<double> kbar(const double tbar,const double sqrtdbar){
   vector<double> k(NF);
   k[0]=k1bar(tbar,sqrtdbar);
   k[1]=k2bar(tbar,sqrtdbar);
@@ -122,14 +122,14 @@ vector<double> kbar(double tbar,double sqrtdbar){
 //========//
 // deltak //
 //========//
-vector<double> deltak(MATRIX<complex<double>,NF,NF> Hf){
+vector<double> deltak(const MATRIX<complex<double>,NF,NF>& Hf){
   vector<double> dk(1);
   double d=D(Hf), sqrtd=sqrt(d);
   dk[0]=a1*sqrtd;
   return dk;
 }
 
-vector<double> deltak(double sqrtd){
+vector<double> deltak(const double sqrtd){
   vector<double> dk(1);
   dk[0]=a1*sqrtd;
   return dk;
@@ -138,14 +138,14 @@ vector<double> deltak(double sqrtd){
 //===========//
 // deltakbar //
 //===========//
-vector<double> deltakbar(MATRIX<complex<double>,NF,NF> Hfbar){
+vector<double> deltakbar(const MATRIX<complex<double>,NF,NF>& Hfbar){
   vector<double> dk(1);
   double dbar=D(Hfbar), sqrtdbar=sqrt(dbar);
   dk[0]=a1*sqrtdbar;
   return dk;
 }
 
-vector<double> deltakbar(double sqrtdbar){
+vector<double> deltakbar(const double sqrtdbar){
   vector<double> dk(1);
   dk[0]=a1*sqrtdbar;
   return dk;

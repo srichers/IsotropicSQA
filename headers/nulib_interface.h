@@ -149,7 +149,7 @@ class EAS{
   vector<double> pair_kernel1;
 
   EAS(){}
-  EAS(string filename, string eosfilename){
+  EAS(const string filename, const string eosfilename){
     // select what to read
     do_iscat = 0;
     do_pair = 0;

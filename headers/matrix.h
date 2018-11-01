@@ -142,7 +142,7 @@ ostream& operator<<(ostream& os, const MATRIX<T,a,b>& m){
 }
 
 template<typename T, unsigned a, unsigned b>
-MATRIX<T,a,b> Adjoint(MATRIX<T,a,b> input){
+MATRIX<T,a,b> Adjoint(const MATRIX<T,a,b>& input){
   assert(a==b);
   MATRIX<T,a,b> result;
   for(unsigned i=0; i<a; i++)
@@ -152,7 +152,7 @@ MATRIX<T,a,b> Adjoint(MATRIX<T,a,b> input){
 }
 
 template<typename T, unsigned a, unsigned b>
-MATRIX<T,a,b> Conjugate(MATRIX<T,a,b> input){
+MATRIX<T,a,b> Conjugate(const MATRIX<T,a,b>& input){
   MATRIX<T,a,b> result;
   for(unsigned i=0; i<a; i++)
     for(unsigned j=0; j<b; j++)
@@ -161,7 +161,7 @@ MATRIX<T,a,b> Conjugate(MATRIX<T,a,b> input){
 }
 
 template<typename T, unsigned a, unsigned b>
-T Trace(MATRIX<T,a,b> input){
+T Trace(const MATRIX<T,a,b>& input){
   assert(a==b);
   T result = 0;
   for(unsigned i=0; i<a; i++)

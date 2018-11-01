@@ -73,4 +73,4 @@ const double c12V = cos(theta12V);
 const double s12V = sin(theta12V);
 const double alphaV[NF] = {0,0};
 const double betaV[NF-1] = {0};
-
+const double sin2thetaW = 0.23122;

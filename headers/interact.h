@@ -26,7 +26,6 @@
 */
 
 #include "nulib_interface.h"
-#include "isospin.h"
 
 //============//
 // Initialize //
@@ -101,22 +100,23 @@ void initialize(vector<vector<MATRIX<complex<double>,NF,NF> > >& fmatrixf,
 //=============================//
 // Self-Interaction Potentials //
 //=============================//
-MATRIX<double,2,2> avg_matrix(double eval, double muval){
+MATRIX<double,2,2> avg_matrix(const double eval, const double muval){
   MATRIX<double,2,2> result;
   result[e ][e ] = eval;
   result[mu][mu] = muval;
   result[e ][mu] = result[mu][e] = (eval + muval) / 2.;
   return result;
 }
-MATRIX<double,2,2> tilde_matrix(double eval, double muval){
-  const double sin2thetaW = 0.23122;
+MATRIX<double,2,2> tilde_matrix(const double eval, const double muval){
   MATRIX<double,2,2> result;
   result[e ][e ] = 0;
   result[mu][mu] = 0;
   result[e ][mu] = result[mu][e] = (eval - muval) / (4.*sin2thetaW);
   return result;
 }
-MATRIX<complex<double>,2,2> blocking_term0(MATRIX<double,2,2> Phi0matrix, MATRIX<complex<double>,2,2> f, MATRIX<complex<double>,2,2> fp){
+MATRIX<complex<double>,2,2> blocking_term0(const MATRIX<double,2,2>& Phi0matrix,
+					   const MATRIX<complex<double>,2,2>& f,
+					   const MATRIX<complex<double>,2,2>& fp){
   MATRIX<complex<double>,2,2> result;
   for(flavour fa=e; fa<=mu; fa++)
     for(flavour fb=e; fb<=mu; fb++){
