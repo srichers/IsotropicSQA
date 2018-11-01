@@ -255,7 +255,7 @@ void K(const double r,
 //===========//
 void Outputvsr(ofstream &foutf, const double r, const vector<vector<MATRIX<complex<double>,NF,NF> > >& fmatrixf){
   foutf << r << "\t";
-  const unsigned NE = fmatrixf.size();
+  const unsigned NE = fmatrixf[0].size();
   for(int i=0; i<NE; i++)
     for(state m=matter; m<=antimatter; m++)
       for(flavour f1=e; f1<=mu; f1++)

@@ -44,7 +44,7 @@ void initialize(vector<vector<MATRIX<complex<double>,NF,NF> > >& fmatrixf,
   cout << "T = " << T << " MeV" << endl;
   cout << "Ye = " << Ye << endl;
   eas.set(rho,T,Ye,do_interact);
-  const unsigned NE = fmatrixf.size();
+  const unsigned NE = fmatrixf[0].size();
   
   for(int i=0; i<NE; i++){
     for(state m=matter; m<=antimatter; m++)
@@ -136,7 +136,7 @@ vector<vector<MATRIX<complex<double>,NF,NF> > > my_interact
   (const vector<vector<MATRIX<complex<double>,NF,NF> > >& fmatrixf,
    const double rho, const double T, const double Ye, const EAS& eas){
 
-  const unsigned NE = fmatrixf.size();
+  const unsigned NE = fmatrixf[0].size();
   vector<vector<MATRIX<complex<double>,NF,NF> > > dfdr(2, vector<MATRIX<complex<double>,NF,NF> >(NE));
 
   // don't do anything if too sparse
