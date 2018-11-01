@@ -235,11 +235,12 @@ int main(int argc, char *argv[]){
 	  nbar += real(fmatrixf0[antimatter][i][f1][f1]) * eas.nu[i]*eas.nu[i]*eas.dnu[i]*coeff;
 	}
       }
-      if(r==0){
+      if(counter==1){
 	n0=n;
 	nbar0=nbar;
-	cout << "t(s) \t dt(s) \t n_nu("<< n0<<"/ccm) \t n_nubar("<<nbar0<<"/ccm) \t n_nu-n_nubar("<<n0-nbar0<<"/ccm)" << endl;
+	cout << "iter \t t(s) \t dt(s) \t n_nu("<< n0<<"/ccm) \t n_nubar("<<nbar0<<"/ccm) \t n_nu-n_nubar("<<n0-nbar0<<"/ccm)" << endl;
       }
+      cout << counter << "\t";
       cout << r/cgs::constants::c << "\t";
       cout << dr/cgs::constants::c << "\t";
       cout << n/n0 << "\t" << nbar/nbar0 << "\t" << (n-nbar)/(n0-nbar0) << endl;
@@ -356,8 +357,6 @@ int main(int argc, char *argv[]){
 	if(norm(SSMSW[0][0])+0.1<norm(SSMSW[0][1]) or
 	   norm(SSSI [0][0])+0.1<norm(SSSI [0][1]) or
 	   interact_error >= 0.1*accuracy){
-	  cout << "reset!" << endl;
-	  cout.flush();
 	  assert(interact_error <= accuracy);
 	  r_interact_last = r;
 	  fmatrixf0[m][i] = fmatrixf[m][i];
