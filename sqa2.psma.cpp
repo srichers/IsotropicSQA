@@ -254,8 +254,9 @@ int main(int argc, char *argv[]){
 
     // beginning of RK section
     double maxerror,interact_error;
-    bool repeat;
+    bool repeat, do_reset;
     do{
+      do_reset = false;
       repeat = false;
       maxerror=0.;
       interact_error=0;
@@ -297,13 +298,21 @@ int main(int argc, char *argv[]){
       }
       r=r0+dr;
       // convert fmatrix from flavor basis to mass basis, oscillate, convert back
-      for(state m=matter; m<=antimatter; m++)
+      for(state m=matter; m<=antimatter; m++){
 	for(int i=0; i<eas.ng; i++){	    
 	  SSMSW = W(Y[m][i][msw])*B(Y[m][i][msw]);
 	  SSSI  = W(Y[m][i][si ])*B(Y[m][i][si ]);
 	  SThisStep = U0[m][i] * SSMSW*SSSI * Adjoint(U0[m][i]);
 	  fmatrixf[m][i] = SThisStep * fmatrixf0[m][i] * Adjoint(SThisStep);
+
+	  // test that the MSW S matrix is close to diagonal
+	  // test the SI S matrix is close to diagonal
+	  // test amount of interaction error accumulated
+	  if(norm(SSMSW[0][0])+0.1<norm(SSMSW[0][1]) or
+	     norm(SSSI [0][0])+0.1<norm(SSSI [0][1]))
+	    do_reset = true;
 	}
+      }
 	  
       if(do_interact && counter%step_interact==0){
 		
@@ -328,6 +337,7 @@ int main(int argc, char *argv[]){
 	      for(flavour f2=e; f2<=mu; f2++)
 		interact_error = max(fabs(ftmp0[m][i][f1][f2]-fmatrixf[m][i][f1][f2])/trace,interact_error);
 	  }
+	if(interact_error >= 0.1*accuracy) do_reset = true;
       }
 	  
       // decide whether to accept step, if not adjust step size and reset variables
@@ -347,24 +357,18 @@ int main(int argc, char *argv[]){
     }while(repeat==true); // end of RK section
 
     // update fmatrixf0 if necessary
-    for(state m=matter;m<=antimatter;m++) for(int i=0;i<=eas.ng-1;i++){
-	SSMSW = W(Y[m][i][msw])*B(Y[m][i][msw]); 
-	SSSI  = W(Y[m][i][si ])*B(Y[m][i][si ]); 
-	    
-	// test that the MSW S matrix is close to diagonal
-	// test the SI S matrix is close to diagonal
-	// test amount of interaction error accumulated
-	if(norm(SSMSW[0][0])+0.1<norm(SSMSW[0][1]) or
-	   norm(SSSI [0][0])+0.1<norm(SSSI [0][1]) or
-	   interact_error >= 0.1*accuracy){
-	  cout << "reset!" << endl;
-	  cout.flush();
-	  assert(interact_error <= accuracy);
-	  r_interact_last = r;
+    if(do_reset){
+      r_interact_last = r;
+      for(state m=matter;m<=antimatter;m++){
+	for(int i=0;i<=eas.ng-1;i++){
 	  fmatrixf0[m][i] = fmatrixf[m][i];
 	  Y[m][i] = YIdentity;
 	}
-	else{ // take modulo 2 pi of phase angles
+      }
+    }
+    else{ // take modulo 2 pi of phase angles
+      for(state m=matter;m<=antimatter;m++){
+	for(int i=0;i<=eas.ng-1;i++){
 	  Y[m][i][msw][2]=fmod(Y[m][i][msw][2],M_2PI);
 	  Y[m][i][si ][2]=fmod(Y[m][i][si ][2],M_2PI);
 	      
@@ -376,6 +380,7 @@ int main(int argc, char *argv[]){
 	  Y[m][i][si][5]=modf(Y[m][i][si][5],&ipart);
 	}
       }
+    }
       
     // output to file
     if(r>=rmax) finish=true;
