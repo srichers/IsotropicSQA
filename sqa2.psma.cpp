@@ -266,12 +266,15 @@ int main(int argc, char *argv[]){
 	// RK integration for oscillation
 	// if potential changes with r, update potential inside rk loop
 	for(int k=0;k<=NRK-1;k++){
+	  assert(CC[k] == CC[k]);
 	  r=r0+AA[k]*dr;
 	  Y=Y0;
-	  for(state m = matter; m <= antimatter; m++)
+          #pragma omp simd collapse(5)
+	  for(int m=0; m<=1; m++) // 0=matter 1=antimatter
 	    for(int i=0;i<=eas.ng-1;i++)
-	      for(solution x=msw;x<=si;x++)
+	      for(int x=0;x<=1;x++) // 0=msw 1=si
 		for(int j=0;j<=NY-1;j++)
+		  
 		  for(int l=0;l<=k-1;l++)
 		    Y[m][i][x][j] += BB[k][l] * Ks[l][m][i][x][j];
 
@@ -280,13 +283,14 @@ int main(int argc, char *argv[]){
 	  
 	// increment all quantities from oscillation
 	Y=Y0;
-	for(state m=matter;m<=antimatter;m++)
+        #pragma omp parallel for collapse(4) reduction(max:maxerror)
+	for(int m=0; m<=1; m++)  // 0=matter 1=antimatter
 	  for(int i=0;i<=eas.ng-1;i++)
-	    for(solution x=msw;x<=si;x++)
+	    for(int x=0; x<=1; x++)  // 0=msw 1=si
 	      for(int j=0;j<=NY-1;j++){
+
 		double Yerror = 0.;
 		for(int k=0;k<=NRK-1;k++){
-		  assert(CC[k] == CC[k]);
 		  assert(Ks[k][m][i][x][j] == Ks[k][m][i][x][j]);
 		  Y[m][i][x][j] += CC[k] * Ks[k][m][i][x][j];
 		  Yerror += (CC[k]-DD[k]) * Ks[k][m][i][x][j];
@@ -368,7 +372,7 @@ int main(int argc, char *argv[]){
       }
     }
     else{ // take modulo 2 pi of phase angles
-      #pragma omp parallel for collapse(2)
+#pragma omp simd collapse(2)
       for(int m=0;m<=1;m++){ // 0=matter 1=antimatter
 	for(int i=0;i<=eas.ng-1;i++){
 	  Y[m][i][msw][2]=fmod(Y[m][i][msw][2],M_2PI);
