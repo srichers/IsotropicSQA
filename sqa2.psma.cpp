@@ -359,7 +359,8 @@ int main(int argc, char *argv[]){
     // update fmatrixf0 if necessary
     if(do_reset){
       r_interact_last = r;
-      for(state m=matter;m<=antimatter;m++){
+      #pragma omp parallel for collapse(2)
+      for(int m=0;m<=1;m++){ // 0=matter 1=antimatter
 	for(int i=0;i<=eas.ng-1;i++){
 	  fmatrixf0[m][i] = fmatrixf[m][i];
 	  Y[m][i] = YIdentity;
@@ -367,17 +368,17 @@ int main(int argc, char *argv[]){
       }
     }
     else{ // take modulo 2 pi of phase angles
-      for(state m=matter;m<=antimatter;m++){
+      #pragma omp parallel for collapse(2)
+      for(int m=0;m<=1;m++){ // 0=matter 1=antimatter
 	for(int i=0;i<=eas.ng-1;i++){
 	  Y[m][i][msw][2]=fmod(Y[m][i][msw][2],M_2PI);
 	  Y[m][i][si ][2]=fmod(Y[m][i][si ][2],M_2PI);
 	      
-	  double ipart;
-	  Y[m][i][msw][4]=modf(Y[m][i][msw][4],&ipart);
-	  Y[m][i][msw][5]=modf(Y[m][i][msw][5],&ipart);
+	  Y[m][i][msw][4]=fmod(Y[m][i][msw][4],1.0);
+	  Y[m][i][msw][5]=fmod(Y[m][i][msw][5],1.0);
 	      
-	  Y[m][i][si][4]=modf(Y[m][i][si][4],&ipart);
-	  Y[m][i][si][5]=modf(Y[m][i][si][5],&ipart);
+	  Y[m][i][si][4]=fmod(Y[m][i][si][4],1.0);
+	  Y[m][i][si][5]=fmod(Y[m][i][si][5],1.0);
 	}
       }
     }
