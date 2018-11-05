@@ -195,7 +195,6 @@ int main(int argc, char *argv[]){
        (NM,vector<vector<vector<double> > >(eas.ng,vector<vector<double> >(NS,vector<double>(NY)))));
     
   // temporaries
-  MATRIX<complex<double>,NF,NF> SSMSW,SSSI,SThisStep;
   vector<vector<MATRIX<complex<double>,NF,NF> > > ftmp0, dfdr0, dfdr1;
 
   // **********************
@@ -268,21 +267,24 @@ int main(int argc, char *argv[]){
 	for(int k=0;k<=NRK-1;k++){
 	  assert(CC[k] == CC[k]);
 	  r=r0+AA[k]*dr;
-	  Y=Y0;
-          #pragma omp simd collapse(5)
-	  for(int m=0; m<=1; m++) // 0=matter 1=antimatter
-	    for(int i=0;i<=eas.ng-1;i++)
-	      for(int x=0;x<=1;x++) // 0=msw 1=si
-		for(int j=0;j<=NY-1;j++)
-		  
+          #pragma omp parallel for collapse(4)
+	  for(int m=0; m<=1; m++){ // 0=matter 1=antimatter
+	    for(int i=0;i<=eas.ng-1;i++){
+	      for(int x=0;x<=1;x++){ // 0=msw 1=si
+		for(int j=0;j<=NY-1;j++){
+
+		  Y[m][i][x][j] = Y0[m][i][x][j];
 		  for(int l=0;l<=k-1;l++)
 		    Y[m][i][x][j] += BB[k][l] * Ks[l][m][i][x][j];
-
+		}
+	      }
+	    }
+	  }
+	  
 	  K(r,dr,rho,Ye,pmatrixm0matter,HfV,Y,C0,A0,Ks[k]);
 	}
 	  
 	// increment all quantities from oscillation
-	Y=Y0;
         #pragma omp parallel for collapse(4) reduction(max:maxerror)
 	for(int m=0; m<=1; m++)  // 0=matter 1=antimatter
 	  for(int i=0;i<=eas.ng-1;i++)
@@ -290,6 +292,7 @@ int main(int argc, char *argv[]){
 	      for(int j=0;j<=NY-1;j++){
 
 		double Yerror = 0.;
+		Y[m][i][x][j] = Y0[m][i][x][j];
 		for(int k=0;k<=NRK-1;k++){
 		  assert(Ks[k][m][i][x][j] == Ks[k][m][i][x][j]);
 		  Y[m][i][x][j] += CC[k] * Ks[k][m][i][x][j];
@@ -301,12 +304,14 @@ int main(int argc, char *argv[]){
 
       }
       r=r0+dr;
+
       // convert fmatrix from flavor basis to mass basis, oscillate, convert back
-      for(state m=matter; m<=antimatter; m++){
-	for(int i=0; i<eas.ng; i++){	    
-	  SSMSW = W(Y[m][i][msw])*B(Y[m][i][msw]);
-	  SSSI  = W(Y[m][i][si ])*B(Y[m][i][si ]);
-	  SThisStep = U0[m][i] * SSMSW*SSSI * Adjoint(U0[m][i]);
+      #pragma omp parallel for collapse(2) reduction(||:do_reset)
+      for(int m=matter; m<=antimatter; m++){
+	for(int i=0; i<eas.ng; i++){
+	  MATRIX<complex<double>,NF,NF> SSMSW = W(Y[m][i][msw])*B(Y[m][i][msw]);
+	  MATRIX<complex<double>,NF,NF> SSSI  = W(Y[m][i][si ])*B(Y[m][i][si ]);
+	  MATRIX<complex<double>,NF,NF> SThisStep = U0[m][i] * SSMSW*SSSI * Adjoint(U0[m][i]);
 	  fmatrixf[m][i] = SThisStep * fmatrixf0[m][i] * Adjoint(SThisStep);
 
 	  // test that the MSW S matrix is close to diagonal
@@ -317,7 +322,7 @@ int main(int argc, char *argv[]){
 	    do_reset = true;
 	}
       }
-	  
+
       if(do_interact && counter%step_interact==0){
 		
 	// interact with the matter
