@@ -252,13 +252,12 @@ int main(int argc, char *argv[]){
     getP(r,U0,fmatrixf0,eas.nu,eas.dnu,pmatrixm0matter);
 
     // beginning of RK section
-    double maxerror,interact_error;
+    double maxerror;
     bool repeat, do_reset;
     do{
       do_reset = false;
       repeat = false;
       maxerror=0.;
-      interact_error=0;
 
       if(do_oscillate){
 
@@ -330,27 +329,37 @@ int main(int argc, char *argv[]){
 	double dr_interact = (r-r_interact_last);
 	ftmp0 = fmatrixf;
 	dfdr0 = my_interact(fmatrixf, rho, temperature, Ye, eas);
-	for(state m=matter; m<=antimatter; m++)
+        #pragma omp parallel for collapse(2)
+	for(int m=matter; m<=antimatter; m++)
 	  for(int i=0; i<eas.ng; i++)
 	    ftmp0[m][i] += dfdr0[m][i] * dr_interact;
-	dfdr1 = my_interact(ftmp0, rho, temperature, Ye, eas);
-	for(state m=matter; m<=antimatter; m++)
-	  for(int i=0; i<eas.ng; i++)
-	    fmatrixf[m][i] += (dfdr0[m][i] + dfdr1[m][i])*0.5 * dr_interact;
 
-	// get interact error
-	for(state m=matter; m<=antimatter; m++)
+	double interact_impact = 0;
+	dfdr1 = my_interact(ftmp0, rho, temperature, Ye, eas);
+        #pragma omp parallel for collapse(2)
+	#pragma omp reduction(max:maxerror) reduction(max:interact_impact)
+	for(int m=matter; m<=antimatter; m++){
 	  for(int i=0; i<eas.ng; i++){
+	    MATRIX<complex<double>,NF,NF> df = (dfdr0[m][i] + dfdr1[m][i])*0.5*dr_interact;
+	    fmatrixf[m][i] += df;
+	    
 	    double trace = real(fmatrixf[m][i][e][e]+fmatrixf[m][i][mu][mu]);
-	    for(flavour f1=e; f1<=mu; f1++)
-	      for(flavour f2=e; f2<=mu; f2++)
-		interact_error = max(fabs(ftmp0[m][i][f1][f2]-fmatrixf[m][i][f1][f2])/trace,interact_error);
+	    for(flavour f1=e; f1<=mu; f1++){
+	      for(flavour f2=e; f2<=mu; f2++){
+		double error = fabs(ftmp0[m][i][f1][f2]-fmatrixf[m][i][f1][f2])/trace;
+		double impact = fabs(df[f1][f2])/trace;
+		maxerror = max(maxerror, do_oscillate?impact:error);
+		interact_impact = max(interact_impact, impact);
+	      }
+	    }
 	  }
-	if(interact_error >= 0.1*accuracy) do_reset = true;
+	}
+
+	if(interact_impact >= 0.1*accuracy) do_reset = true;
+	if(do_oscillate) assert(interact_impact < accuracy);
       }
 	  
       // decide whether to accept step, if not adjust step size and reset variables
-      maxerror = max(maxerror, interact_error);
       if(maxerror>accuracy){
 	dr *= 0.9 * pow(accuracy/maxerror, 1./(NRKOrder-1.));
 	repeat=true;
@@ -381,13 +390,12 @@ int main(int argc, char *argv[]){
       for(int m=0;m<=1;m++){ // 0=matter 1=antimatter
 	for(int i=0;i<=eas.ng-1;i++){
 	  Y[m][i][msw][2]=fmod(Y[m][i][msw][2],M_2PI);
-	  Y[m][i][si ][2]=fmod(Y[m][i][si ][2],M_2PI);
-	      
 	  Y[m][i][msw][4]=fmod(Y[m][i][msw][4],1.0);
 	  Y[m][i][msw][5]=fmod(Y[m][i][msw][5],1.0);
-	      
-	  Y[m][i][si][4]=fmod(Y[m][i][si][4],1.0);
-	  Y[m][i][si][5]=fmod(Y[m][i][si][5],1.0);
+
+	  Y[m][i][si ][2]=fmod(Y[m][i][si ][2],M_2PI);
+	  Y[m][i][si ][4]=fmod(Y[m][i][si ][4],1.0);
+	  Y[m][i][si ][5]=fmod(Y[m][i][si ][5],1.0);
 	}
       }
     }
