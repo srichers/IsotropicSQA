@@ -269,7 +269,7 @@ int main(int argc, char *argv[]){
 	for(int k=0;k<=NRK-1;k++){
 	  assert(CC[k] == CC[k]);
 	  r=r0+AA[k]*dr;
-          #pragma omp parallel for collapse(4)
+          #pragma omp simd collapse(4)
 	  for(int m=0; m<=1; m++){ // 0=matter 1=antimatter
 	    for(int i=0;i<=eas.ng-1;i++){
 	      for(int x=0;x<=1;x++){ // 0=msw 1=si
