@@ -340,7 +340,7 @@ int main(int argc, char *argv[]){
 	double interact_impact = 0;
 	dfdr1 = my_interact(ftmp0, rho, temperature, Ye, eas);
         #pragma omp parallel for collapse(2) schedule(guided)
-	#pragma omp parallel reduction(max:maxerror) reduction(max:interact_impact)
+	#pragma omp reduction(max:maxerror) reduction(max:interact_impact)
 	for(int m=matter; m<=antimatter; m++){
 	  for(int i=0; i<eas.ng; i++){
 	    MATRIX<complex<double>,NF,NF> df = (dfdr0[m][i] + dfdr1[m][i])*0.5*dr_interact;
