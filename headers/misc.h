@@ -120,7 +120,6 @@ void K(const double r,
        vector<vector<vector<vector<double> > > > &K){
 
   const unsigned NE = pmatrixm0matter.size();
-  vector<MATRIX<complex<double>,NF,NF> > VfSIE(NE); // contribution to self-interaction potential from each energy
   vector<vector<MATRIX<complex<double>,NF,NF> > > 
     Sa(NE,vector<MATRIX<complex<double>,NF,NF> >(NS)),
     Sabar(NE,vector<MATRIX<complex<double>,NF,NF> >(NS));
@@ -173,12 +172,10 @@ void K(const double r,
     // *****************************************************************
     // contribution to the self-interaction potential from this energy *
     // *****************************************************************
-    MATRIX<complex<double>,NF,NF> Sfm    = UWBW[i] * Sa[i][si];
-    VfSIE[i] = Sfm * pmatrixm0matter[i]*Adjoint(Sfm);
+    MATRIX<complex<double>,NF,NF> Sfm  = UWBW[i] * Sa[i][si];
+    MATRIX<complex<double>,NF,NF> VfSIE = Sfm * pmatrixm0matter[i]*Adjoint(Sfm);
     #pragma omp critical
-    for(flavour f1=e; f1<=mu; f1++)
-      for(flavour f2=e; f2<=mu; f2++)
-	VfSI[f1][f2]+=VfSIE[i][f1][f2];
+    VfSI+=VfSIE;
   }//end for loop over i
 
   #pragma omp single
