@@ -133,7 +133,7 @@ void K(const double r,
 
 #pragma omp parallel
   {
-  #pragma omp for
+  #pragma omp for schedule(dynamic)
   for(int i=0; i<NE; i++){
     MATRIX<complex<double>,NF,NF> Hf  = HfV[matter][i]+VfMSW;
     array<double,NF> kk  = k(Hf);
@@ -184,7 +184,7 @@ void K(const double r,
   // *********************
   // SI part of solution *
   // *********************
-  #pragma omp for
+  #pragma omp for schedule(runtime)
   for(int i=0; i<NE; i++){
     MATRIX<double,3,4> JI;
     MATRIX<complex<double>,NF,NF> Ha, HB;
