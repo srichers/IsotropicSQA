@@ -30,7 +30,7 @@
 //===//
 MATRIX<complex<double>,NF,NF>
   U(const vector<double>& dk,
-    const vector<MATRIX<complex<double>,NF,NF> > &C,
+    const array<MATRIX<complex<double>,NF,NF>,NF> &C,
     const vector<vector<double> >& A){
 
   MATRIX<complex<double>,NF,NF> u;
@@ -87,8 +87,8 @@ template<> complex<double> dCdr<mu,mu>(const MATRIX<complex<double>,NF,NF>& dHdr
 // MixingMatrixFactors //
 //=====================//
 vector<vector<double> >
-MixingMatrixFactors(const vector<MATRIX<complex<double>,NF,NF> > &C,
-		    const vector<MATRIX<complex<double>,NF,NF> > &C0,
+MixingMatrixFactors(const array<MATRIX<complex<double>,NF,NF>,NF> &C,
+		    const array<MATRIX<complex<double>,NF,NF>,NF> &C0,
 		    const vector<vector<double> > &A0){
 
   vector<vector<double> > A(A0);
@@ -151,11 +151,11 @@ vector<vector<MATRIX<complex<double>,NF,NF> > >
 //==================//
 // CofactorMatrices //
 //==================//
-vector<MATRIX<complex<double>,NF,NF> >
+array<MATRIX<complex<double>,NF,NF>,NF>
   CofactorMatrices(const MATRIX<complex<double>,NF,NF>& H,
 		   const vector<double>& k){
   
-  vector<MATRIX<complex<double>,NF,NF> > CC(NF);
+  array<MATRIX<complex<double>,NF,NF>,NF> CC;
   for(int j=0;j<=NF-1;j++){
     CC[j][e ][e ] = (H[mu][mu]-k[j]);
     CC[j][e ][mu] = -H[mu][e];

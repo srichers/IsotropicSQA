@@ -53,6 +53,8 @@ using std::pair;
 using std::numeric_limits;
 #include<vector>
 using std::vector;
+#include<array>
+using std::array;
 
 // headers
 #include "headers/matrix.h"
@@ -127,8 +129,8 @@ int main(int argc, char *argv[]){
   VfMSW0[mu][mu]=Vmu(rho,Ye);
     
   // cofactor matrices at initial point - will be recycled as cofactor matrices at beginning of every step
-  vector<vector<vector<MATRIX<complex<double>,NF,NF> > > > 
-    C0(NM,vector<vector<MATRIX<complex<double>,NF,NF> > >(eas.ng,vector<MATRIX<complex<double>,NF,NF> >(NF)));
+  vector<vector< array<MATRIX<complex<double>,NF,NF>,NF> > > 
+    C0(NM,vector<array<MATRIX<complex<double>,NF,NF>,NF> >(eas.ng));
 
   // mixing matrix element prefactors at initial point - will be recycled like C0
   vector<vector<vector<vector<double> > > > 

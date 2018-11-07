@@ -115,7 +115,7 @@ void K(const double r,
        const vector<MATRIX<complex<double>,NF,NF> >& pmatrixm0matter,
        const vector<vector<MATRIX<complex<double>,NF,NF> > > HfV,
        const vector<vector<vector<vector<double> > > > &Y,
-       const vector<vector<vector<MATRIX<complex<double>,NF,NF> > > > &C0,
+       const vector<vector<array<MATRIX<complex<double>,NF,NF>,NF> > > &C0,
        const vector<vector<vector<vector<double> > > > &A0,
        vector<vector<vector<vector<double> > > > &K){
 
@@ -138,7 +138,7 @@ void K(const double r,
     MATRIX<complex<double>,NF,NF> Hf  = HfV[matter][i]+VfMSW;
     vector<double> kk  = k(Hf);
     vector<double> dkk = deltak(Hf);
-    vector<MATRIX<complex<double>,NF,NF> > CC = CofactorMatrices(Hf,kk);
+    array<MATRIX<complex<double>,NF,NF>,NF> CC = CofactorMatrices(Hf,kk);
     vector<vector<double> > AA = MixingMatrixFactors(CC,C0[matter][i],A0[matter][i]);
     MATRIX<complex<double>,NF,NF> UU  = U(dkk,CC,AA);
     MATRIX<complex<double>,NF,NF> BB  = B(Y[matter][i][msw]);
@@ -188,7 +188,7 @@ void K(const double r,
   for(int i=0; i<NE; i++){
     MATRIX<double,3,4> JI;
     MATRIX<complex<double>,NF,NF> Ha, HB;
-    vector<double> dvdr(4);
+    double dvdr[4];
 
     //*********
     // Matter *
