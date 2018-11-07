@@ -115,7 +115,7 @@ int main(int argc, char *argv[]){
   const vector<MATRIX<complex<double>,NF,NF> > UV = Evaluate_UV();
   const vector<vector<MATRIX<complex<double>,NF,NF> > > HfV = Evaluate_HfV(kV,UV);
   const vector<vector<MATRIX<complex<double>,NF,NF> > > CV = Evaluate_CV(kV, HfV);
-  const vector<vector<vector<double> > > AV = Evaluate_AV(kV,HfV,UV);
+  const vector<array<array<double,NF>,NF> > AV = Evaluate_AV(kV,HfV,UV);
     
   // **************************************
   // quantities evaluated at inital point *
@@ -123,7 +123,8 @@ int main(int argc, char *argv[]){
     
   // MSW potential matrix
   MATRIX<complex<double>,NF,NF> VfMSW0, Hf0;
-  vector<double> k0, deltak0;
+  array<double,NF> k0;
+  array<double,1> deltak0;
     
   VfMSW0[e][e]=Ve(rho,Ye);
   VfMSW0[mu][mu]=Vmu(rho,Ye);
@@ -133,8 +134,8 @@ int main(int argc, char *argv[]){
     C0(NM,vector<array<MATRIX<complex<double>,NF,NF>,NF> >(eas.ng));
 
   // mixing matrix element prefactors at initial point - will be recycled like C0
-  vector<vector<vector<vector<double> > > > 
-    A0(NM,vector<vector<vector<double> > >(eas.ng,vector<vector<double> >(NF,vector<double>(NF))));
+  vector<vector< array<array<double,NF>,NF> > > 
+    A0(NM,vector<array<array<double,NF>,NF> >(eas.ng));
     
   // mixing angles to MSW basis at initial point
   vector<vector<MATRIX<complex<double>,NF,NF> > > U0(NM); 

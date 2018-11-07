@@ -29,9 +29,9 @@
 // U //
 //===//
 MATRIX<complex<double>,NF,NF>
-  U(const vector<double>& dk,
+  U(const array<double,1>& dk,
     const array<MATRIX<complex<double>,NF,NF>,NF> &C,
-    const vector<vector<double> >& A){
+    const array<array<double,NF>,NF>& A){
 
   MATRIX<complex<double>,NF,NF> u;
   double d;
@@ -86,12 +86,12 @@ template<> complex<double> dCdr<mu,mu>(const MATRIX<complex<double>,NF,NF>& dHdr
 //=====================//
 // MixingMatrixFactors //
 //=====================//
-vector<vector<double> >
+array<array<double,NF>,NF>
 MixingMatrixFactors(const array<MATRIX<complex<double>,NF,NF>,NF> &C,
 		    const array<MATRIX<complex<double>,NF,NF>,NF> &C0,
-		    const vector<vector<double> > &A0){
+		    const array<array<double,NF>,NF> &A0){
 
-  vector<vector<double> > A(A0);
+  array<array<double,NF>,NF> A(A0);
   for(int j=0;j<=NF-1;j++){
     if(real(C[j][e][mu]*C0[j][e][mu])<0.) A[j][e ] *= -1.;
     if(real(C[j][mu][e]*C0[j][mu][e])<0.) A[j][mu] *= -1.;
@@ -153,7 +153,7 @@ vector<vector<MATRIX<complex<double>,NF,NF> > >
 //==================//
 array<MATRIX<complex<double>,NF,NF>,NF>
   CofactorMatrices(const MATRIX<complex<double>,NF,NF>& H,
-		   const vector<double>& k){
+		   const array<double,NF>& k){
   
   array<MATRIX<complex<double>,NF,NF>,NF> CC;
   for(int j=0;j<=NF-1;j++){
@@ -202,13 +202,13 @@ vector<vector<MATRIX<complex<double>,NF,NF> > >
 // Evaluate_AV //
 //=============//
 // mixing matrix element prefactors in vacuum
-vector<vector<vector<double> > >
+vector<array<array<double,NF>,NF> >
 Evaluate_AV(const vector<vector<double> >& kV,
 	    const vector<vector<MATRIX<complex<double>,NF,NF> > >& HfV,
 	    const vector<MATRIX<complex<double>,NF,NF> >& UV){
 
   const unsigned NE = kV.size();
-  vector<vector<vector<double> > > AV(NE,vector<vector<double> >(NF,vector<double>(NF)));
+  vector<array<array<double,NF>,NF> > AV(NE);
   
   double Delta;
   for(int i=0;i<=NE-1;i++){

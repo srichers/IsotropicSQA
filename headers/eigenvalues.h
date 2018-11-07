@@ -79,10 +79,10 @@ inline double asymptotick2bar(const double Hee,const double Hmm,const double x,c
 //===//
 // k //
 //===//
-vector<double> k(const MATRIX<complex<double>,NF,NF>& Hf){
+array<double,NF> k(const MATRIX<complex<double>,NF,NF>& Hf){
   //if(4.*norm(Hf[e][mu])/norm(Hf[e][e]-Hf[mu][mu])<0.0745){ return asymptotick(Hf);}
 
-  vector<double> k(NF);
+  array<double,NF> k;
   double t=real(Trace(Hf)), sqrtd=sqrt(D(Hf));
   
   k[0]=k1(t,sqrtd);
@@ -90,8 +90,8 @@ vector<double> k(const MATRIX<complex<double>,NF,NF>& Hf){
   return k;
 }
 
-vector<double> k(const double t,const double sqrtd){
-  vector<double> k(NF);
+array<double,NF> k(const double t,const double sqrtd){
+  array<double,NF> k;
   k[0]=k1(t,sqrtd);
   k[1]=k2(t,sqrtd);
   return k;
@@ -100,10 +100,10 @@ vector<double> k(const double t,const double sqrtd){
 //======//
 // kbar //
 //======//
-vector<double> kbar(const MATRIX<complex<double>,NF,NF>& Hf){
+array<double,NF> kbar(const MATRIX<complex<double>,NF,NF>& Hf){
   //if(4.*norm(Hf[e][mu])/norm(Hf[e][e]-Hf[mu][mu])<0.0745){ return asymptotickbar(Hf);}
   
-  vector<double> k(NF);
+  array<double,NF> k;
   double tbar=real(Trace(Hf)), sqrtdbar=sqrt(D(Hf));
   
   k[0]=k1bar(tbar,sqrtdbar);
@@ -112,8 +112,8 @@ vector<double> kbar(const MATRIX<complex<double>,NF,NF>& Hf){
   return k;
 }
 
-vector<double> kbar(const double tbar,const double sqrtdbar){
-  vector<double> k(NF);
+array<double,NF> kbar(const double tbar,const double sqrtdbar){
+  array<double,NF> k;
   k[0]=k1bar(tbar,sqrtdbar);
   k[1]=k2bar(tbar,sqrtdbar);
   return k;
@@ -122,15 +122,15 @@ vector<double> kbar(const double tbar,const double sqrtdbar){
 //========//
 // deltak //
 //========//
-vector<double> deltak(const MATRIX<complex<double>,NF,NF>& Hf){
-  vector<double> dk(1);
+array<double,1> deltak(const MATRIX<complex<double>,NF,NF>& Hf){
+  array<double,1> dk;
   double d=D(Hf), sqrtd=sqrt(d);
   dk[0]=a1*sqrtd;
   return dk;
 }
 
-vector<double> deltak(const double sqrtd){
-  vector<double> dk(1);
+array<double,1> deltak(const double sqrtd){
+  array<double,1> dk;
   dk[0]=a1*sqrtd;
   return dk;
 }
@@ -138,15 +138,15 @@ vector<double> deltak(const double sqrtd){
 //===========//
 // deltakbar //
 //===========//
-vector<double> deltakbar(const MATRIX<complex<double>,NF,NF>& Hfbar){
-  vector<double> dk(1);
+array<double,1> deltakbar(const MATRIX<complex<double>,NF,NF>& Hfbar){
+  array<double,1> dk;
   double dbar=D(Hfbar), sqrtdbar=sqrt(dbar);
   dk[0]=a1*sqrtdbar;
   return dk;
 }
 
-vector<double> deltakbar(const double sqrtdbar){
-  vector<double> dk(1);
+array<double,1> deltakbar(const double sqrtdbar){
+  array<double,1> dk;
   dk[0]=a1*sqrtdbar;
   return dk;
 }

@@ -116,7 +116,7 @@ void K(const double r,
        const vector<vector<MATRIX<complex<double>,NF,NF> > > HfV,
        const vector<vector<vector<vector<double> > > > &Y,
        const vector<vector<array<MATRIX<complex<double>,NF,NF>,NF> > > &C0,
-       const vector<vector<vector<vector<double> > > > &A0,
+       const vector<vector<array<array<double,NF>,NF> > > &A0,
        vector<vector<vector<vector<double> > > > &K){
 
   const unsigned NE = pmatrixm0matter.size();
@@ -136,18 +136,18 @@ void K(const double r,
   #pragma omp for
   for(int i=0; i<NE; i++){
     MATRIX<complex<double>,NF,NF> Hf  = HfV[matter][i]+VfMSW;
-    vector<double> kk  = k(Hf);
-    vector<double> dkk = deltak(Hf);
+    array<double,NF> kk  = k(Hf);
+    array<double,1> dkk = deltak(Hf);
     array<MATRIX<complex<double>,NF,NF>,NF> CC = CofactorMatrices(Hf,kk);
-    vector<vector<double> > AA = MixingMatrixFactors(CC,C0[matter][i],A0[matter][i]);
+    array<array<double,NF>,NF> AA = MixingMatrixFactors(CC,C0[matter][i],A0[matter][i]);
     MATRIX<complex<double>,NF,NF> UU  = U(dkk,CC,AA);
     MATRIX<complex<double>,NF,NF> BB  = B(Y[matter][i][msw]);
     Sa[i][si] = B(Y[matter][i][si]);
     UWBW[i] = UU * W(Y[matter][i][msw]) * BB * W(Y[matter][i][si]);
     
     MATRIX<complex<double>,NF,NF> Hfbar = HfV[antimatter][i] + VfMSWbar;
-    vector<double> kkbar = kbar(Hfbar);
-    vector<double> dkkbar = deltakbar(Hfbar);
+    array<double,NF> kkbar = kbar(Hfbar);
+    array<double,1> dkkbar = deltakbar(Hfbar);
     MATRIX<complex<double>,NF,NF> UUbar = Conjugate(U(dkkbar,CC,AA));
     MATRIX<complex<double>,NF,NF> BBbar = B(Y[antimatter][i][msw]);
     Sabar[i][si] = B(Y[antimatter][i][si]);
