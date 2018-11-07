@@ -40,7 +40,6 @@ template<typename T, unsigned a, unsigned b>
     }
 
     MATRIX<T,a,b>(){
-      #pragma omp simd collapse(2)
       for(unsigned i=0; i<a; i++)
 	for(unsigned j=0; j<b; j++)
 	  m[i][j] = 0;
@@ -50,7 +49,6 @@ template<typename T, unsigned a, unsigned b>
     MATRIX<T,a,b> operator*(const MATRIX<T1,b,c>& right) const{
       MATRIX<T,a,c> result;
 
-      #pragma omp simd collapse(3)
       for(unsigned i=0; i<a; i++)
 	for(unsigned j=0; j<c; j++){
 	  for(unsigned k=0; k<b; k++){
@@ -63,7 +61,6 @@ template<typename T, unsigned a, unsigned b>
     MATRIX<T,a,b> operator*(const T right) const{
       MATRIX<T,a,b> result;
 
-      #pragma omp simd collapse(2)
       for(unsigned i=0; i<a; i++)
 	for(unsigned j=0; j<b; j++)
 	  result[i][j] = m[i][j]*right;
@@ -73,7 +70,6 @@ template<typename T, unsigned a, unsigned b>
     template<typename T1>
     MATRIX<T,a,b> operator+(const MATRIX<T1,a,b>& right) const{
       MATRIX<T,a,b> result;
-      #pragma omp simd collapse(2)
       for(unsigned i=0; i<a; i++)
 	for(unsigned j=0; j<b; j++)
 	  result[i][j] = m[i][j] + right[i][j];
@@ -100,7 +96,6 @@ template<typename T, unsigned a, unsigned b>
     template<typename T1>
     MATRIX<T,a,b> operator-(const MATRIX<T1,a,b>& right) const{
       MATRIX<T,a,b> result;
-      #pragma omp simd collapse(2)
       for(unsigned i=0; i<a; i++)
 	for(unsigned j=0; j<b; j++)
 	  result[i][j] = m[i][j] - right[i][j];
@@ -109,7 +104,6 @@ template<typename T, unsigned a, unsigned b>
 
     MATRIX<T,a,b> operator-() const{
       MATRIX<T,a,b> result;
-      #pragma omp simd collapse(2)
       for(unsigned i=0; i<a; i++)
 	for(unsigned j=0; j<b; j++)
 	  result[i][j] = -m[i][j];
@@ -118,7 +112,6 @@ template<typename T, unsigned a, unsigned b>
 
     template<typename T1>
     MATRIX<T,a,b> operator*=(const T1 input){
-      #pragma omp simd collapse(2)
       for(unsigned i=0; i<a; i++)
 	for(unsigned j=0; j<b; j++)
 	  m[i][j] *= input;
@@ -153,7 +146,6 @@ template<typename T, unsigned a, unsigned b>
 MATRIX<T,a,b> Adjoint(const MATRIX<T,a,b>& input){
   assert(a==b);
   MATRIX<T,a,b> result;
-  #pragma omp simd collapse(2)
   for(unsigned i=0; i<a; i++)
     for(unsigned j=0; j<b; j++)
       result[i][j] = conj(input[j][i]);
@@ -163,7 +155,6 @@ MATRIX<T,a,b> Adjoint(const MATRIX<T,a,b>& input){
 template<typename T, unsigned a, unsigned b>
 MATRIX<T,a,b> Conjugate(const MATRIX<T,a,b>& input){
   MATRIX<T,a,b> result;
-  #pragma omp simd collapse(2)
   for(unsigned i=0; i<a; i++)
     for(unsigned j=0; j<b; j++)
       result[i][j] = conj(input[i][j]);
