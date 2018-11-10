@@ -82,7 +82,8 @@ int main(int argc, char *argv[]){
   const string outputfilename = get_parameter<string>(fin,"outputfilename");
   const double rmax = get_parameter<double>(fin,"tmax") * cgs::constants::c; // cm
   const double dr0  = get_parameter<double>(fin,"dt0")  * cgs::constants::c; // cm
-  const double accuracy = get_parameter<double>(fin,"accuracy");
+  const double osc_accuracy = get_parameter<double>(fin,"osc_accuracy");
+  const double int_accuracy = get_parameter<double>(fin,"int_accuracy");
   const double increase = get_parameter<double>(fin,"increase"); // factor by which timestep increases if small error
   const double mixing = get_parameter<double>(fin,"mixing");
   const int step_output = get_parameter<int>(fin,"step_output");
@@ -192,13 +193,16 @@ int main(int argc, char *argv[]){
   int NRK,NRKOrder;
   const double *AA=NULL,**BB=NULL,*CC=NULL,*DD=NULL;
   RungeKuttaCashKarpParameters(NRK,NRKOrder,AA,BB,CC,DD);
-    
+  //if(do_interact) NRKOrder = 2;
+  
   vector<vector<vector<vector<vector<double> > > > > 
     Ks(NRK,vector<vector<vector<vector<double> > > >
        (NM,vector<vector<vector<double> > >(eas.ng,vector<vector<double> >(NS,vector<double>(NY)))));
     
   // temporaries
-  vector<vector<MATRIX<complex<double>,NF,NF> > > ftmp0, dfdr0, dfdr1;
+  vector<vector<MATRIX<complex<double>,NF,NF> > > ftmp0(fmatrixf);
+  vector<vector<MATRIX<complex<double>,NF,NF> > > dfdr0(fmatrixf);
+  vector<vector<MATRIX<complex<double>,NF,NF> > > dfdr1(fmatrixf);
 
   // **********************
   // start of calculation *
@@ -208,8 +212,11 @@ int main(int argc, char *argv[]){
   // *****************************************
   // initialize at beginning of every domain *
   // *****************************************
+  array<vector<double>,NM> r_interact_last;
+  array<vector<bool>,NM> do_reset;
+  r_interact_last[0]=r_interact_last[1]= vector<double>(eas.ng,0);
+  do_reset[0]=do_reset[1]=vector<bool>(eas.ng,false);
   double r=0;
-  double r_interact_last = 0;
   double dr = dr0;
 
   for(state m=matter;m<=antimatter;m++)
@@ -256,9 +263,8 @@ int main(int argc, char *argv[]){
 
     // beginning of RK section
     double maxerror;
-    bool repeat, do_reset;
+    bool repeat;
     do{
-      do_reset = false;
       repeat = false;
       maxerror=0.;
 
@@ -271,15 +277,11 @@ int main(int argc, char *argv[]){
 	  r=r0+AA[k]*dr;
 	  Y=Y0;
 	  for(int l=0;l<=k-1;l++)
-	    for(int m=0; m<=1; m++){ // 0=matter 1=antimatter
-	      for(int i=0;i<=eas.ng-1;i++){
-		for(int x=0;x<=1;x++){ // 0=msw 1=si
-		  for(int j=0;j<=NY-1;j++){
+	    for(int m=0; m<=1; m++) // 0=matter 1=antimatter
+	      for(int i=0;i<=eas.ng-1;i++)
+		for(int x=0;x<=1;x++) // 0=msw 1=si
+		  for(int j=0;j<=NY-1;j++)
 		    Y[m][i][x][j] += BB[k][l] * Ks[l][m][i][x][j];
-		}
-	      }
-	    }
-	  }
 	  
 	  K(r,dr,rho,Ye,pmatrixm0matter,HfV,Y,C0,A0,Ks[k]);
 	}
@@ -290,7 +292,6 @@ int main(int argc, char *argv[]){
 	  for(int i=0;i<=eas.ng-1;i++)
 	    for(int x=0; x<=1; x++)  // 0=msw 1=si
 	      for(int j=0;j<=NY-1;j++){
-
 		double Yerror = 0.;
 		for(int k=0;k<=NRK-1;k++){
 		  Y[m][i][x][j] += CC[k] * Ks[k][m][i][x][j];
@@ -299,11 +300,13 @@ int main(int argc, char *argv[]){
 		maxerror = max( maxerror, fabs(Yerror) );
 	      }
 
-      }
+      } // do_oscillate
+
+      // step r forward
       r=r0+dr;
 
       // convert fmatrix from flavor basis to mass basis, oscillate, convert back
-      #pragma omp parallel for collapse(2) reduction(||:do_reset)
+      #pragma omp parallel for collapse(2)
       for(int m=matter; m<=antimatter; m++){
 	for(int i=0; i<eas.ng; i++){
 	  MATRIX<complex<double>,NF,NF> SSMSW = W(Y[m][i][msw])*B(Y[m][i][msw]);
@@ -315,73 +318,69 @@ int main(int argc, char *argv[]){
 	  // test the SI S matrix is close to diagonal
 	  // test amount of interaction error accumulated
 	  if(norm(SSMSW[0][0])+0.1<norm(SSMSW[0][1]) or
-	     norm(SSSI [0][0])+0.1<norm(SSSI [0][1]))
-	    do_reset = true;
+	     norm(SSSI [0][0])+0.1<norm(SSSI [0][1])){
+	    do_reset[m][i] = true;
+	    cout <<"reset m"<<m<<" i"<<i<<" oscillation!"<<endl;
+	  }
 	}
       }
 
       if(do_interact && counter%step_interact==0){
-		
-	// interact with the matter
-	// if fluid changes with r, update opacities here, too
-	double dr_interact = (r-r_interact_last);
-	ftmp0 = fmatrixf;
+
 	dfdr0 = my_interact(fmatrixf, rho, temperature, Ye, eas);
 	for(int m=matter; m<=antimatter; m++)
 	  for(int i=0; i<eas.ng; i++)
-	    ftmp0[m][i] += dfdr0[m][i] * dr_interact;
+	    ftmp0[m][i] = fmatrixf[m][i] + dfdr0[m][i]*(r-r_interact_last[m][i]);
 
-	double interact_impact = 0;
 	dfdr1 = my_interact(ftmp0, rho, temperature, Ye, eas);
 	for(int m=matter; m<=antimatter; m++){
 	  for(int i=0; i<eas.ng; i++){
-	    MATRIX<complex<double>,NF,NF> df = (dfdr0[m][i] + dfdr1[m][i])*0.5*dr_interact;
+	    MATRIX<complex<double>,NF,NF> df =
+	      (dfdr0[m][i] + dfdr1[m][i])*0.5 * (r-r_interact_last[m][i]);
 	    fmatrixf[m][i] += df;
-	    
+
 	    double trace = real(fmatrixf[m][i][e][e]+fmatrixf[m][i][mu][mu]);
+	    assert(trace>0);
 	    for(flavour f1=e; f1<=mu; f1++){
 	      for(flavour f2=e; f2<=mu; f2++){
 		double error = fabs(ftmp0[m][i][f1][f2]-fmatrixf[m][i][f1][f2])/trace;
+		maxerror = max(maxerror, error);
 		double impact = fabs(df[f1][f2])/trace;
-		maxerror = max(maxerror, do_oscillate?impact:error);
-		interact_impact = max(interact_impact, impact);
-	      }
-	    }
-	  }
-	}
-
-	if(interact_impact >= 0.1*accuracy) do_reset = true;
-	if(do_oscillate) assert(interact_impact < accuracy);
-      }
+		if(impact >= 0.1*int_accuracy) do_reset[m][i] = true;
+		assert(impact < int_accuracy);
+	      } // f2
+	    } // f1
+	  } // i
+	} // m
+	  
+      } // do_interact
 	  
       // decide whether to accept step, if not adjust step size and reset variables
-      if(maxerror>accuracy){
-	dr *= 0.9 * pow(accuracy/maxerror, 1./(NRKOrder-1.));
+      if(maxerror>osc_accuracy){
+	dr *= 0.9 * pow(osc_accuracy/maxerror, 1./(NRKOrder-1.));
 	repeat=true;
 	r=r0;
 	Y=Y0;
       }
       else{
 	dr *= increase;
-	if(maxerror>0) dr *= min( 1.0, pow(accuracy/maxerror,1./max(1,NRKOrder))/increase );
+	if(maxerror>0) dr *= min( 1.0, pow(osc_accuracy/maxerror,1./max(1,NRKOrder))/increase );
       }
       dr = max(dr, 4.*r*numeric_limits<double>::epsilon());
       dr = min(dr, rmax-r);
     }while(repeat==true); // end of RK section
 
     // update fmatrixf0 if necessary
-    if(do_reset){
-      r_interact_last = r;
-      for(int m=0;m<=1;m++){ // 0=matter 1=antimatter
-	for(int i=0;i<=eas.ng-1;i++){
+    for(int m=matter;m<=antimatter;m++){ // 0=matter 1=antimatter
+      for(int i=0;i<=eas.ng-1;i++){
+	if(do_reset[m][i]){
+	  cout << "reset m"<<m<<" i"<<i<<endl;
+	  r_interact_last[m][i] = r;
 	  fmatrixf0[m][i] = fmatrixf[m][i];
 	  Y[m][i] = YIdentity;
+	  do_reset[m][i] = false;
 	}
-      }
-    }
-    else{ // take modulo 2 pi of phase angles
-      for(int m=0;m<=1;m++){ // 0=matter 1=antimatter
-	for(int i=0;i<=eas.ng-1;i++){
+	else{ // take modulo 2 pi of phase angles
 	  Y[m][i][msw][2]=fmod(Y[m][i][msw][2],M_2PI);
 	  Y[m][i][msw][4]=fmod(Y[m][i][msw][4],1.0);
 	  Y[m][i][msw][5]=fmod(Y[m][i][msw][5],1.0);
