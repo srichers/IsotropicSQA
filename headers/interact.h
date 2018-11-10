@@ -32,7 +32,6 @@
 //============//
 void initialize(vector<vector<MATRIX<complex<double>,NF,NF> > >& fmatrixf,
 		EAS& eas,
-		const double r,
 		const double rho,
 		const double T,
 		const double Ye,
@@ -44,13 +43,9 @@ void initialize(vector<vector<MATRIX<complex<double>,NF,NF> > >& fmatrixf,
   cout << "T = " << T << " MeV" << endl;
   cout << "Ye = " << Ye << endl;
   eas.set(rho,T,Ye,do_interact);
-  const unsigned NE = fmatrixf[0].size();
+  const unsigned NE = eas.ng;
   
   for(int i=0; i<NE; i++){
-    for(state m=matter; m<=antimatter; m++)
-      for(flavour f1=e; f1<=mu; f1++)
-	for(flavour f2=e; f2<=mu; f2++) 
-	  fmatrixf[m][i][f1][f2] = 0;
     double fe = eas.fermidirac(0,i);
     double fa = eas.fermidirac(1,i);
     double fx = eas.fermidirac(2,i);

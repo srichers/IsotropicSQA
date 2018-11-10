@@ -63,19 +63,20 @@ inline double Ve(const double rho, const double Ye){
 }
 inline double Vmu(const double rho, const double Ye){ return 0.;}
 
-void getP(const double r,
-	  const vector<vector<MATRIX<complex<double>,NF,NF> > >& U0,
+void getP(const vector<vector<MATRIX<complex<double>,NF,NF> > >& U0,
 	  const vector<vector<MATRIX<complex<double>,NF,NF> > >& fmatrixf0,
 	  const vector<double>& nu,
 	  const vector<double>& dnu,
-	  vector<MATRIX<complex<double>,NF,NF> >& pmatrixm0matter){
-
-  for(int i=0; i<pmatrixm0matter.size(); i++){
-    pmatrixm0matter[i] = Adjoint(U0[matter][i])
-      * (fmatrixf0[matter][i] - Conjugate(fmatrixf0[antimatter][i]) )
-      * U0[matter][i];
-    pmatrixm0matter[i] *= M_SQRT2*cgs::constants::GF /* erg cm^3*/
-      * 4.*M_PI*nu[i]*nu[i]*dnu[i]/*Hz^3*/ / pow(cgs::constants::c,3)/*cm^3 Hz^3*/;
+	  vector<vector<MATRIX<complex<double>,NF,NF> > >& pmatrixm0){
+  const int NE = pmatrixm0[0].size();
+  
+  for(int m=matter; m<=antimatter; m++){
+    for(int i=0; i<NE; i++){
+      pmatrixm0[m][i] = Adjoint(U0[m][i]) * fmatrixf0[m][i] * U0[m][i]
+	* (M_SQRT2*cgs::constants::GF /* erg cm^3*/
+	   * 4.*M_PI*nu[i]*nu[i]*dnu[i]/*Hz^3*/
+	   / pow(cgs::constants::c,3)/*cm^3 Hz^3*/);
+    }
   }
 }
 
@@ -108,24 +109,23 @@ MATRIX<complex<double>,NF,NF> W(const vector<double>& Y){
 //===//
 // K //
 //===//
-void K(const double r,
-       const double dr,
+void K(const double dr,
        const double rho,
        const double Ye,
-       const vector<MATRIX<complex<double>,NF,NF> >& pmatrixm0matter,
-       const vector<vector<MATRIX<complex<double>,NF,NF> > > HfV,
+       const vector<vector<MATRIX<complex<double>,NF,NF> > >& pmatrixm0,
+       const vector<vector<MATRIX<complex<double>,NF,NF> > >& HfV,
        const vector<vector<vector<vector<double> > > > &Y,
        const vector<vector<array<MATRIX<complex<double>,NF,NF>,NF> > > &C0,
        const vector<vector<array<array<double,NF>,NF> > > &A0,
        vector<vector<vector<vector<double> > > > &K){
 
-  const unsigned NE = pmatrixm0matter.size();
+  const unsigned NE = pmatrixm0[0].size();
   vector<vector<MATRIX<complex<double>,NF,NF> > > 
     Sa(NE,vector<MATRIX<complex<double>,NF,NF> >(NS)),
     Sabar(NE,vector<MATRIX<complex<double>,NF,NF> >(NS));
   vector<MATRIX<complex<double>,NF,NF> > UWBW(NE), UWBWbar(NE);
   MATRIX<complex<double>,NF,NF> VfSI,VfSIbar;  // self-interaction potential
-
+  vector<MATRIX<complex<double>,NF,NF> > VfSIE(NE); // SI potential from each energy
   MATRIX<complex<double>,NF,NF> VfMSW, VfMSWbar;
   VfMSW[e][e]=Ve(rho,Ye);
   VfMSW[mu][mu]=Vmu(rho,Ye);
@@ -172,14 +172,18 @@ void K(const double r,
     // *****************************************************************
     // contribution to the self-interaction potential from this energy *
     // *****************************************************************
-    MATRIX<complex<double>,NF,NF> Sfm  = UWBW[i] * Sa[i][si];
-    MATRIX<complex<double>,NF,NF> VfSIE = Sfm * pmatrixm0matter[i]*Adjoint(Sfm);
-    #pragma omp critical
-    VfSI+=VfSIE;
+    MATRIX<complex<double>,NF,NF> Sfm    = UWBW   [i] * Sa   [i][si];
+    MATRIX<complex<double>,NF,NF> Sfmbar = UWBWbar[i] * Sabar[i][si];
+    VfSIE[i] = Sfm*pmatrixm0[matter][i]*Adjoint(Sfm) -
+      Conjugate(Sfmbar*pmatrixm0[antimatter][i]*Adjoint(Sfmbar));
   }//end for loop over i
 
   #pragma omp single
-  VfSIbar=-Conjugate(VfSI);
+  {
+    for(int i=0; i<NE; i++)
+      VfSI += VfSIE[i];
+    VfSIbar=-Conjugate(VfSI);
+  }
 
   // *********************
   // SI part of solution *
@@ -250,9 +254,27 @@ void K(const double r,
 //===========//
 // Outputvsr //
 //===========//
-void Outputvsr(ofstream &foutf, const double r, const vector<vector<MATRIX<complex<double>,NF,NF> > >& fmatrixf){
-  foutf << r << "\t";
+void Outputvsr(ofstream &foutf, const double r, const double dr, const int counter, const EAS& eas, const vector<vector<MATRIX<complex<double>,NF,NF> > >& fmatrixf, const double max_impact){
   const unsigned NE = fmatrixf[0].size();
+
+  // output to stdout
+  double n=0, nbar=0;
+  double coeff = 4.*M_PI / pow(cgs::constants::c,3);
+  for(int i=0; i<NE; i++){
+    double dnu3 = eas.nu[i]*eas.nu[i]*eas.dnu[i];
+    for(flavour f1=e; f1<=mu; f1++){
+      n    += real(fmatrixf[    matter][i][f1][f1]) * dnu3 * coeff;
+      nbar += real(fmatrixf[antimatter][i][f1][f1]) * dnu3 * coeff;
+    }
+  }
+  cout << counter << "\t";
+  cout << r/cgs::constants::c << "\t";
+  cout << dr/cgs::constants::c << "\t";
+  cout << n << "\t" << nbar << "\t" << (n-nbar) << "\t" << max_impact << endl;
+  cout.flush();
+  
+  // output to file
+  foutf << r << "\t";
   for(int i=0; i<NE; i++)
     for(state m=matter; m<=antimatter; m++)
       for(flavour f1=e; f1<=mu; f1++)
