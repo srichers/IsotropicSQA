@@ -80,7 +80,6 @@ int main(int argc, char *argv[]){
   const double rho = get_parameter<double>(fin,"rho");
   const double Ye  = get_parameter<double>(fin,"Ye");
   const double temperature = get_parameter<double>(fin,"temperature"); // MeV
-  const string outputfilename = get_parameter<string>(fin,"outputfilename");
   const double rmax = get_parameter<double>(fin,"tmax") * cgs::constants::c; // cm
   const double dr0  = get_parameter<double>(fin,"dt0")  * cgs::constants::c; // cm
   const double accuracy = get_parameter<double>(fin,"accuracy");
@@ -197,12 +196,12 @@ int main(int argc, char *argv[]){
   double dr = dr0;
   bool finish=false;
   int counter=0;
-  int next_output = rand()%step_output;
+  int next_output = rand()%step_output+1;
   double max_impact=0;
 
   // set up output file
   ofstream foutf;
-  foutf.open((outputfilename+"/f.dat").c_str());
+  foutf.open("f.dat");
   foutf.precision(12);
   foutf << "# 1:r ";
   for(int i=0; i<eas.ng; i++)
@@ -217,6 +216,7 @@ int main(int argc, char *argv[]){
   foutf.flush();
   cout << "iter \t t(s) \t dt(s) \t n_nu(1/ccm) \t n_nubar(1/ccm) \t n_nu-n_nubar(1/ccm) \t max_impact" << endl;
   Outputvsr(foutf,r,dr,counter,eas, fmatrixf, 0);
+  counter++;
 
   // ***********************
   // start the loop over r *
@@ -233,7 +233,7 @@ int main(int argc, char *argv[]){
     do{
       maxerror=0.;
       getP(U0,fmatrixf0,eas.nu,eas.dnu,pmatrixm0);
-      if(do_interact and r_interact_last+dr_interact < r+dr){
+      if(do_interact and r_interact_last+dr_interact <= r+dr){
 	dr = r_interact_last + dr_interact - r;
 	calc_interaction = true;
       }
@@ -385,7 +385,8 @@ int main(int argc, char *argv[]){
       if(max_impact > accuracy)
 	cout << "WARNING: max_impact = "<<max_impact << endl;
       r_interact_last = r;
-      dr_interact *= min(.1*accuracy / max_impact, increase);
+      if(max_impact > 0)
+	dr_interact *= min(.1*accuracy / max_impact, increase);
     }
     if(counter==next_output or finish){
       Outputvsr(foutf,r,dr,counter,eas, fmatrixf,max_impact);
