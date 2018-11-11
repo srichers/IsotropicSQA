@@ -197,7 +197,6 @@ int main(int argc, char *argv[]){
   bool finish=false;
   int counter=0;
   int next_output = rand()%step_output+1;
-  double max_impact=0;
 
   // set up output file
   ofstream foutf;
@@ -290,54 +289,83 @@ int main(int argc, char *argv[]){
       // TIMESTEPPING //
       //==============//
       r=r0+dr;
-      if(maxerror>accuracy){
-	dr *= 0.9 * pow(accuracy/maxerror, 1./(NRKOrder-1.));
-	repeat=true;
-	r=r0;
-	Y=Y0;
+      if(do_oscillate){
+	if(maxerror>accuracy){
+	  dr *= 0.9 * pow(accuracy/maxerror, 1./(NRKOrder-1.));
+	  repeat=true;
+	  r=r0;
+	  Y=Y0;
+	}
+	else{
+	  dr *= increase;
+	  repeat = false;
+	  if(maxerror>0) dr *= min( 1.0, pow(accuracy/maxerror,1./max(1,NRKOrder))/increase );
+	}
+	dr = max(dr, 4.*r*numeric_limits<double>::epsilon());
+	dr = min(dr, rmax-r);
       }
-      else{
-	dr *= increase;
-	repeat = false;
-	if(maxerror>0) dr *= min( 1.0, pow(accuracy/maxerror,1./max(1,NRKOrder))/increase );
-      }
-      dr = max(dr, 4.*r*numeric_limits<double>::epsilon());
-      dr = min(dr, rmax-r);
+      else dr = -1; // make sure it's set by interact later
 
     }while(repeat==true); // end of RK section
 
     //=============//
     // DO_INTERACT //
     //=============//
-    if(calc_interaction){
-      dfdr = my_interact(fmatrixf, rho, temperature, Ye, eas);
-      for(int m=matter;m<=antimatter;m++){ // 0=matter 1=antimatter
-	for(int i=0;i<=eas.ng-1;i++){
-	  dfCumulative[m][i] += dfdr[m][i] * dr_interact;
+    if(do_interact){
+      // so far fmatrixf is fmatrixf0 + oscillations
+      // add in dfCumulative
+      for(int m=matter;m<=antimatter;m++)
+	for(int i=0;i<=eas.ng-1;i++)
 	  fmatrixf[m][i] += dfCumulative[m][i];
+    }
+    if(calc_interaction){
+      double this_impact = 0;
+      dfdr = my_interact(fmatrixf, rho, temperature, Ye, eas);
+      for(int m=matter;m<=antimatter;m++){
+	for(int i=0;i<=eas.ng-1;i++){
+	  MATRIX<complex<double>,NF,NF> df = dfdr[m][i] * dr_interact;
+	  dfCumulative[m][i] += df;
+	  fmatrixf[m][i] += df;
+
+	  double trace = norm(Trace(fmatrixf[m][i]));
+	  for(flavour f1=e; f1<=mu; f1++){
+	    for(flavour f2=e; f2<=mu; f2++){
+	      double impact = norm(df[f1][f2])/trace;
+	      this_impact = max(this_impact, impact);
+	    }
+	  }
 	}
       }
-      max_impact = 0;
+      r_interact_last = r;
+      if(this_impact>0)
+	dr_interact *= min(increase, (this_impact>0 ? .1*accuracy/this_impact : 1) );
+      if(not do_oscillate){
+	dr_interact = min(dr_interact, rmax-r);
+	dr = dr_interact;
+      }
     }
 
     //========================//
     // RESETTING/ACCUMULATING //
     //========================//
     //#pragma omp parallel for collapse(2) reduction(max:max_impact)
+    double max_impact = 0;
     for(int m=matter;m<=antimatter;m++){ // 0=matter 1=antimatter
       for(int i=0;i<=eas.ng-1;i++){
 	bool do_reset = false;
 
 	if(calc_interaction){
 	  // test amount of interaction error accumulated
+	  double impact = 0;
 	  double trace = norm(Trace(fmatrixf[m][i]));
-	  for(flavour f1=e; f1<=mu; f1++){
-	    for(flavour f2=e; f2<=mu; f2++){
-	      double impact = norm(dfCumulative[m][i][f1][f2])/trace;
-	      max_impact = max(max_impact,impact);
-	      if(impact >= 0.1*accuracy) do_reset = true;
-	    }
-	  }
+	  for(flavour f1=e; f1<=mu; f1++)
+	    for(flavour f2=e; f2<=mu; f2++)
+	      impact = max(impact, norm(dfCumulative[m][i][f1][f2])/trace);
+	  if(impact > .1*accuracy)
+	    do_reset = true;
+	  if(impact >    accuracy)
+	    cout << "WARNING: impact = "<<impact << "(m="<<m<<" i="<<i<<")" << endl;
+	  max_impact = max(impact, impact);
 	}
 
 	if(do_oscillate){
@@ -381,13 +409,6 @@ int main(int argc, char *argv[]){
     // OUTPUT //
     //========//
     if(r>=rmax) finish=true;
-    if(calc_interaction){
-      if(max_impact > accuracy)
-	cout << "WARNING: max_impact = "<<max_impact << endl;
-      r_interact_last = r;
-      if(max_impact > 0)
-	dr_interact *= min(.1*accuracy / max_impact, increase);
-    }
     if(counter==next_output or finish){
       Outputvsr(foutf,r,dr,counter,eas, fmatrixf,max_impact);
       next_output = counter + rand()%step_output + 1;
