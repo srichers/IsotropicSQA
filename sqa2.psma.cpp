@@ -365,7 +365,7 @@ int main(int argc, char *argv[]){
 	    do_reset = true;
 	  if(impact >    accuracy)
 	    cout << "WARNING: impact = "<<impact << "(m="<<m<<" i="<<i<<")" << endl;
-	  max_impact = max(impact, impact);
+	  max_impact = max(impact, max_impact);
 	}
 
 	if(do_oscillate){
