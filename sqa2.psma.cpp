@@ -55,6 +55,7 @@ using std::numeric_limits;
 using std::vector;
 #include<array>
 using std::array;
+#include<ctime>
 
 // headers
 #include "headers/matrix.h"
@@ -86,7 +87,6 @@ int main(int argc, char *argv[]){
   const double increase = get_parameter<double>(fin,"increase"); // factor by which timestep increases if small error
   const double mixing = get_parameter<double>(fin,"mixing");
   const int step_output = get_parameter<int>(fin,"step_output");
-  const int step_interact = get_parameter<int>(fin,"step_interact");
   const int do_oscillate = get_parameter<int>(fin,"do_oscillate");
   const int do_interact = get_parameter<int>(fin,"do_interact");
   cout.flush();
@@ -185,14 +185,20 @@ int main(int argc, char *argv[]){
     Ks(NRK,vector<vector<vector<vector<double> > > >
        (NM,vector<vector<vector<double> > >(eas.ng,vector<vector<double> >(NS,vector<double>(NY)))));
 
+  // random number generator - prevent aliasing in interactions and output
+  srand(time(NULL));
+  
   // *****************************************
   // initialize at beginning of every domain *
   // *****************************************
   double r_interact_last=0;
+  double dr_interact = dr0;
   double r=0;
   double dr = dr0;
   bool finish=false;
   int counter=0;
+  int next_output = rand()%step_output;
+  double max_impact=0;
 
   // set up output file
   ofstream foutf;
@@ -215,7 +221,6 @@ int main(int argc, char *argv[]){
   // ***********************
   // start the loop over r *
   // ***********************
-  double n0,nbar0;
   do{ 
  
     // save initial values in case of repeat
@@ -224,10 +229,15 @@ int main(int argc, char *argv[]){
 
     // beginning of RK section
     double maxerror;
-    bool repeat;
+    bool repeat, calc_interaction;
     do{
-      repeat = false;
       maxerror=0.;
+      getP(U0,fmatrixf0,eas.nu,eas.dnu,pmatrixm0);
+      if(do_interact and r_interact_last+dr_interact < r+dr){
+	dr = r_interact_last + dr_interact - r;
+	calc_interaction = true;
+      }
+      else calc_interaction = false;
 
       //==============//
       // DO_OSCILLATE //
@@ -276,20 +286,10 @@ int main(int argc, char *argv[]){
       } // do_oscillate
       else fmatrixf = fmatrixf0;
 
-      //=============//
-      // DO_INTERACT //
-      //=============//
-      r=r0+dr;
-      if(do_interact && counter%step_interact==0){
-	dfdr = my_interact(fmatrixf, rho, temperature, Ye, eas);
-	for(int m=matter; m<=antimatter; m++)
-	  for(int i=0; i<eas.ng; i++)
-	    df[m][i] = dfdr[m][i] * (r-r_interact_last);
-      }
-      
       //==============//
       // TIMESTEPPING //
       //==============//
+      r=r0+dr;
       if(maxerror>accuracy){
 	dr *= 0.9 * pow(accuracy/maxerror, 1./(NRKOrder-1.));
 	repeat=true;
@@ -298,6 +298,7 @@ int main(int argc, char *argv[]){
       }
       else{
 	dr *= increase;
+	repeat = false;
 	if(maxerror>0) dr *= min( 1.0, pow(accuracy/maxerror,1./max(1,NRKOrder))/increase );
       }
       dr = max(dr, 4.*r*numeric_limits<double>::epsilon());
@@ -305,21 +306,29 @@ int main(int argc, char *argv[]){
 
     }while(repeat==true); // end of RK section
 
+    //=============//
+    // DO_INTERACT //
+    //=============//
+    if(calc_interaction){
+      dfdr = my_interact(fmatrixf, rho, temperature, Ye, eas);
+      for(int m=matter;m<=antimatter;m++){ // 0=matter 1=antimatter
+	for(int i=0;i<=eas.ng-1;i++){
+	  dfCumulative[m][i] += dfdr[m][i] * dr_interact;
+	  fmatrixf[m][i] += dfCumulative[m][i];
+	}
+      }
+      max_impact = 0;
+    }
+
     //========================//
     // RESETTING/ACCUMULATING //
     //========================//
-    double max_impact=0;
     //#pragma omp parallel for collapse(2) reduction(max:max_impact)
     for(int m=matter;m<=antimatter;m++){ // 0=matter 1=antimatter
       for(int i=0;i<=eas.ng-1;i++){
 	bool do_reset = false;
 
-	if(do_interact){
-	  if(counter%step_interact==0){
-	    dfCumulative[m][i] += df[m][i];
-	    r_interact_last = r;
-	  }
-	  fmatrixf[m][i] += dfCumulative[m][i];
+	if(calc_interaction){
 	  // test amount of interaction error accumulated
 	  double trace = norm(Trace(fmatrixf[m][i]));
 	  for(flavour f1=e; f1<=mu; f1++){
@@ -327,7 +336,6 @@ int main(int argc, char *argv[]){
 	      double impact = norm(dfCumulative[m][i][f1][f2])/trace;
 	      max_impact = max(max_impact,impact);
 	      if(impact >= 0.1*accuracy) do_reset = true;
-	      assert(impact < accuracy);
 	    }
 	  }
 	}
@@ -337,16 +345,13 @@ int main(int argc, char *argv[]){
 	  if(norm(SSMSW[m][i][0][0])+0.1<norm(SSMSW[m][i][0][1]) or
 	     norm(SSSI [m][i][0][0])+0.1<norm(SSSI [m][i][0][1])){
 	    do_reset = true;
-	    //cout <<"reset m"<<m<<" i"<<i<<" oscillation!"<<endl;
 	  }
 	}
 
-	if(true){//do_reset){
-	  //cout << "reset m"<<m<<" i"<<i<<endl;
+	if(do_reset){
 	  fmatrixf0[m][i] = fmatrixf[m][i];
 	  dfCumulative[m][i] *= 0;
 	  Y[m][i] = YIdentity;
-	  getP(U0,fmatrixf0,eas.nu,eas.dnu,pmatrixm0);
 	}
 	else{ // take modulo 2 pi of phase angles
 	  Y[m][i][msw][2]=fmod(Y[m][i][msw][2],M_2PI);
@@ -364,12 +369,21 @@ int main(int argc, char *argv[]){
     // OUTPUT //
     //========//
     if(r>=rmax) finish=true;
-    if(counter%step_output==0 or finish)
+    if(calc_interaction){
+      if(max_impact > accuracy)
+	cout << "WARNING: max_impact = "<<max_impact << endl;
+      r_interact_last = r;
+      dr_interact *= min(.1*accuracy / max_impact, increase);
+    }
+    if(counter==next_output or finish){
       Outputvsr(foutf,r,dr,counter,eas, fmatrixf,max_impact);
+      next_output = counter + rand()%step_output + 1;
+      assert(next_output>counter);
+    }
     counter++;
 
   } while(finish==false);
 
-  cout<<"\nFinished\n\a"; cout.flush();
+  cout << endl << "Finished" << endl;
   return 0;
 }
