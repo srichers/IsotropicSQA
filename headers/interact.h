@@ -46,19 +46,22 @@ void initialize(vector<vector<MATRIX<complex<double>,NF,NF> > >& fmatrixf,
   const unsigned NE = eas.ng;
   
   for(int i=0; i<NE; i++){
-    double fe = eas.fermidirac(0,i);
-    double fa = eas.fermidirac(1,i);
-    double fx = eas.fermidirac(2,i);
-
-    fmatrixf[    matter][i][e ][e ] = fe; 
-    fmatrixf[    matter][i][mu][mu] = fx;
-    fmatrixf[    matter][i][e ][mu] = sqrt(fe*fx)*mixing;
-    fmatrixf[    matter][i][mu][e ] = sqrt(fe*fx)*mixing;
-    fmatrixf[antimatter][i][e ][e ] = fa;
-    fmatrixf[antimatter][i][mu][mu] = fx;
-    fmatrixf[antimatter][i][e ][mu] = sqrt(fa*fx)*mixing;
-    fmatrixf[antimatter][i][mu][e ] = sqrt(fa*fx)*mixing;
+    for(int m=matter; m<=antimatter; m++){
+      double fe = eas.fermidirac(m, i);
+      double fx = eas.fermidirac(2, i);
+      double Tr = fe+fx;
+      double lmax = min(Tr/2., 1.-Tr/2.);
+      assert(lmax >= 0);
+      double z = (fe-fx)/2.;
+      double xmax = sqrt(lmax*lmax - z*z);
+      assert(xmax==xmax);
       
+      fmatrixf[m][i][e ][e ] = fe;
+      fmatrixf[m][i][mu][mu] = fx;
+      fmatrixf[m][i][e ][mu] = xmax*mixing;
+      fmatrixf[m][i][mu][e ] = xmax*mixing;
+    }
+
     cout << "GROUP " << i << endl;
     cout << "eas.emis \t eas.abs \t BB \t eas.scat \t f" << (eas.do_pair ? "\t eas.pair_emis" : "") << endl;
     for(int is=0; is<4; is++){

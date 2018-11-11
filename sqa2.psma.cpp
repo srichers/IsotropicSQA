@@ -280,7 +280,7 @@ int main(int argc, char *argv[]){
 	    SSSI [m][i] = W(Y[m][i][si ])*B(Y[m][i][si ]);
 	    MATRIX<complex<double>,NF,NF> SThisStep = U0[m][i] * SSMSW[m][i]*SSSI[m][i] * Adjoint(U0[m][i]);
 	    fmatrixf[m][i] = SThisStep * fmatrixf0[m][i] * Adjoint(SThisStep);
-	    	    
+
 	  } // i
 	} // m
       } // do_oscillate
@@ -361,6 +361,18 @@ int main(int argc, char *argv[]){
 	  Y[m][i][si ][2]=fmod(Y[m][i][si ][2],M_2PI);
 	  Y[m][i][si ][4]=fmod(Y[m][i][si ][4],1.0);
 	  Y[m][i][si ][5]=fmod(Y[m][i][si ][5],1.0);
+	}
+
+	// sanity checks
+	if(real(fmatrixf[m][i][e ][e ]) > 1. or
+	   real(fmatrixf[m][i][mu][mu]) > 1. or
+	   real(fmatrixf[m][i][e ][e ]) < 0. or
+	   real(fmatrixf[m][i][mu][mu]) < 0. or
+	   imag(fmatrixf[m][i][e ][e ]) > accuracy or
+	   imag(fmatrixf[m][i][mu][mu]) > accuracy){
+	  cout << "m"<<m << " i" << i << endl;
+	  cout << fmatrixf[m][i] << endl;
+	  exit(1);
 	}
       }
     }
