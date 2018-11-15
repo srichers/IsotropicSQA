@@ -105,7 +105,7 @@ MixingMatrixFactors(const array<MATRIX<complex<double>,NF,NF>,NF> &C,
 //===================//
 vector<vector<double> > set_kV(const vector<double>& E){
   assert(NF==2);
-  const unsigned NE = E.size();
+  const int NE = E.size();
   vector<vector<double> > kV(NE,vector<double>(NF));
   for(int i=0;i<NE;i++){
     kV[i][0] = m1*m1             * cgs::constants::c4 /2./E[i];
@@ -134,7 +134,7 @@ vector<vector<MATRIX<complex<double>,NF,NF> > >
   Evaluate_HfV(const vector<vector<double> >& kV,
 	       const vector<MATRIX<complex<double>,NF,NF> >& UV){
 
-  const unsigned NE = kV.size();
+  const int NE = kV.size();
   vector<vector<MATRIX<complex<double>,NF,NF> > > HfV(NM);
   HfV[matter] = vector<MATRIX<complex<double>,NF,NF> >(NE);
   HfV[antimatter] = vector<MATRIX<complex<double>,NF,NF> >(NE);
@@ -188,7 +188,7 @@ vector<MATRIX<complex<double>,NF,NF> > Evaluate_UV(void){
 vector<vector<MATRIX<complex<double>,NF,NF> > >
   Evaluate_CV(const vector<vector<double> >& kV,
 	      const vector<vector<MATRIX<complex<double>,NF,NF> > >& HfV){
-  const unsigned NE = kV.size();
+  const int NE = kV.size();
   vector<vector<MATRIX<complex<double>,NF,NF> > > CV =
     vector<vector<MATRIX<complex<double>,NF,NF> > >(NE,vector<MATRIX<complex<double>,NF,NF> >(NF));
   for(int i=0;i<=NE-1;i++){
@@ -207,7 +207,7 @@ Evaluate_AV(const vector<vector<double> >& kV,
 	    const vector<vector<MATRIX<complex<double>,NF,NF> > >& HfV,
 	    const vector<MATRIX<complex<double>,NF,NF> >& UV){
 
-  const unsigned NE = kV.size();
+  const int NE = kV.size();
   vector<array<array<double,NF>,NF> > AV(NE);
   
   double Delta;
@@ -231,3 +231,4 @@ Evaluate_AV(const vector<vector<double> >& kV,
   }
   return AV;
 }
+

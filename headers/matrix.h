@@ -169,3 +169,10 @@ T Trace(const MATRIX<T,a,b>& input){
     result += input[i][i];
   return result;
 }
+
+double IsospinL(const MATRIX<complex<double>,2,2>& input){
+  double x = real(input[0][1]);
+  double y = imag(input[0][1]);
+  double z = norm(input[0][0]-input[1][1])/2.;
+  return sqrt(x*x + y*y + z*z);
+}

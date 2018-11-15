@@ -25,6 +25,15 @@
 //
 */
 
+struct State{
+  double rho, T, Ye;
+  double r, dr_block, dr_osc, dr_int;
+  int counter;
+  EAS eas;
+  vector<vector<MATRIX<complex<double>,NF,NF> > > fmatrixf;
+  ofstream foutf;
+};
+
 template<typename T>
 T get_parameter(ifstream& fin, const char* name){
   stringstream line;
@@ -41,22 +50,19 @@ inline double Sign(const double input){
   return input>0 ? 1 : -1;
 }
 
-void RungeKuttaCashKarpParameters(int &NRK,int &NOrder,const double* &A,const double** &B,const double* &C,const double* &D)
-     { NRK=6; NOrder=5;
-
-       static const double a[]={ 0., 1./5., 3./10., 3./5., 1., 7./8. };
-       static const double b0[]={};
-       static const double b1[]={ 1./5. };
-       static const double b2[]={ 3./40.,9./40. };
-       static const double b3[]={ 3./10.,-9./10.,6./5. };
-       static const double b4[]={ -11./54.,5./2.,-70./27.,35./27. };
-       static const double b5[]={ 1631./55296.,175./512.,575./13824.,44275./110592.,253./4096. };
-       static const double* b[]={ b0,b1,b2,b3,b4,b5 };
-       static const double c[]={ 37./378.,0.,250./621.,125./594.,0.,512./1771. };
-       static const double d[]={ 2825./27648.,0.,18575./48384.,13525./55296.,277./14336.,1./4. };
-
-       A=a; B=b; C=c; D=d;
-      } 
+// Cash-Karp RK parameters
+const int NRK=6;
+const int NRKOrder=5;
+static const double AA[]={ 0., 1./5., 3./10., 3./5., 1., 7./8. };
+static const double b0[]={};
+static const double b1[]={ 1./5. };
+static const double b2[]={ 3./40.,9./40. };
+static const double b3[]={ 3./10.,-9./10.,6./5. };
+static const double b4[]={ -11./54.,5./2.,-70./27.,35./27. };
+static const double b5[]={ 1631./55296.,175./512.,575./13824.,44275./110592.,253./4096. };
+static const double* BB[]={ b0,b1,b2,b3,b4,b5 };
+static const double CC[]={ 37./378.,0.,250./621.,125./594.,0.,512./1771. };
+static const double DD[]={ 2825./27648.,0.,18575./48384.,13525./55296.,277./14336.,1./4. };
 
 inline double Ve(const double rho, const double Ye){
   return (M_SQRT2*cgs::constants::GF/cgs::constants::Mp)*rho*Ye;
@@ -69,7 +75,8 @@ void getP(const vector<vector<MATRIX<complex<double>,NF,NF> > >& U0,
 	  const vector<double>& dnu,
 	  vector<vector<MATRIX<complex<double>,NF,NF> > >& pmatrixm0){
   const int NE = pmatrixm0[0].size();
-  
+
+  #pragma omp parallel for collapse(2)
   for(int m=matter; m<=antimatter; m++){
     for(int i=0; i<NE; i++){
       pmatrixm0[m][i] = Adjoint(U0[m][i]) * fmatrixf0[m][i] * U0[m][i]
@@ -119,7 +126,7 @@ void K(const double dr,
        const vector<vector<array<array<double,NF>,NF> > > &A0,
        vector<vector<vector<vector<double> > > > &K){
 
-  const unsigned NE = pmatrixm0[0].size();
+  const int NE = pmatrixm0[0].size();
   vector<vector<MATRIX<complex<double>,NF,NF> > > 
     Sa(NE,vector<MATRIX<complex<double>,NF,NF> >(NS)),
     Sabar(NE,vector<MATRIX<complex<double>,NF,NF> >(NS));
@@ -133,7 +140,7 @@ void K(const double dr,
 
 #pragma omp parallel
   {
-  #pragma omp for schedule(guided)
+#pragma omp for
   for(int i=0; i<NE; i++){
     MATRIX<complex<double>,NF,NF> Hf  = HfV[matter][i]+VfMSW;
     array<double,NF> kk  = k(Hf);
@@ -188,7 +195,7 @@ void K(const double dr,
   // *********************
   // SI part of solution *
   // *********************
-  #pragma omp for schedule(guided)
+  #pragma omp for
   for(int i=0; i<NE; i++){
     MATRIX<double,3,4> JI;
     MATRIX<complex<double>,NF,NF> Ha, HB;
@@ -254,36 +261,39 @@ void K(const double dr,
 //===========//
 // Outputvsr //
 //===========//
-void Outputvsr(ofstream &foutf, const double r, const double dr, const int counter, const EAS& eas, const vector<vector<MATRIX<complex<double>,NF,NF> > >& fmatrixf, const double max_impact){
-  const unsigned NE = fmatrixf[0].size();
+void Outputvsr(State& s, const double impact){
+  const int NE = s.eas.ng;
 
   // output to stdout
   double n=0, nbar=0;
   double coeff = 4.*M_PI / pow(cgs::constants::c,3);
   for(int i=0; i<NE; i++){
-    double dnu3 = eas.nu[i]*eas.nu[i]*eas.dnu[i];
+    double dnu3 = s.eas.nu[i]*s.eas.nu[i]*s.eas.dnu[i];
     for(flavour f1=e; f1<=mu; f1++){
-      n    += real(fmatrixf[    matter][i][f1][f1]) * dnu3 * coeff;
-      nbar += real(fmatrixf[antimatter][i][f1][f1]) * dnu3 * coeff;
+      n    += real(s.fmatrixf[    matter][i][f1][f1]) * dnu3 * coeff;
+      nbar += real(s.fmatrixf[antimatter][i][f1][f1]) * dnu3 * coeff;
     }
   }
-  cout << counter << "\t";
-  cout << r/cgs::constants::c << "\t";
-  cout << dr/cgs::constants::c << "\t";
-  cout << n << "\t" << nbar << "\t" << (n-nbar) << "\t" << max_impact << endl;
+  cout << s.counter << "\t";
+  cout << s.r/cgs::constants::c << "\t";
+  cout << s.dr_osc/cgs::constants::c << "\t";
+  cout << s.dr_int/cgs::constants::c << "\t";
+  cout << s.dr_block/cgs::constants::c << "\t";
+  cout << n << "\t" << nbar << "\t" << (n-nbar) << "\t";
+  cout << impact << endl;
   cout.flush();
   
   // output to file
-  foutf << r << "\t";
+  s.foutf << s.r << "\t";
   for(int i=0; i<NE; i++)
     for(state m=matter; m<=antimatter; m++)
       for(flavour f1=e; f1<=mu; f1++)
 	for(flavour f2=e; f2<=mu; f2++) {
-	  foutf << real( fmatrixf[m][i][f1][f2] ) << "\t";
-	  foutf << imag( fmatrixf[m][i][f1][f2] ) << "\t";
+	  s.foutf << real( s.fmatrixf[m][i][f1][f2] ) << "\t";
+	  s.foutf << imag( s.fmatrixf[m][i][f1][f2] ) << "\t";
 	}
-  foutf << endl;
-  foutf.flush();
+  s.foutf << endl;
+  s.foutf.flush();
 }
 
 void Hermitize(MATRIX<complex<double>,2,2>& M, const double accuracy){
