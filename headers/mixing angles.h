@@ -113,16 +113,16 @@ vector<vector<double> > set_kV(const vector<double>& E){
   }
 
   // determine eigenvalue ordering
-  if(kV[0][1]>kV[0][0])
-    cout<<"\n\nNormal hierarchy" << endl;
-  else{ 
-    if(kV[0][1]<kV[0][0])
-      cout<<"\n\nInverted hierarchy" << endl;
-    else{ 
-      cout<<endl<<endl<<"Neither normal or Inverted"<<endl; 
-      abort();
-    }
-  }
+  /* if(kV[0][1]>kV[0][0]) */
+  /*   cout<<"\n\nNormal hierarchy" << endl; */
+  /* else{  */
+  /*   if(kV[0][1]<kV[0][0]) */
+  /*     cout<<"\n\nInverted hierarchy" << endl; */
+  /*   else{  */
+  /*     cout<<endl<<endl<<"Neither normal or Inverted"<<endl;  */
+  /*     abort(); */
+  /*   } */
+  /* } */
   
   return kV;
 }

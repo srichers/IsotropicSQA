@@ -154,10 +154,11 @@ int main(int argc, char *argv[]){
       impact = 0;
       for(int m=matter; m<=antimatter; m++){
 	for(int i=0;i<=s.eas.ng-1;i++){
-	  double trace = norm(Trace(fmatrixf0[m][i]));
+	  double l = IsospinL(fmatrixf0[m][i]);
+	  MATRIX<complex<double>,NF,NF> df = s.fmatrixf[m][i] - fmatrixf0[m][i];
 	  for(flavour f1=e; f1<=mu; f1++){
 	    for(flavour f2=e; f2<=mu; f2++){
-	      impact = max(impact, norm(s.fmatrixf[m][i][f1][f2]-fmatrixf0[m][i][f1][f2])/trace);
+	      impact = max(impact, norm(df[f1][f2]) / l);
 	    } // f2
 	  } // f1
 	} // i
@@ -166,9 +167,11 @@ int main(int argc, char *argv[]){
       // timestepping
       s.r = rstep;
       if(impact > 10*target_impact)
-	cout << "WARNING: impact="<<impact<< endl;
-      if(impact>target_impact*2. or impact<target_impact/2.)
-	s.dr_block *= min(increase, target_impact/impact);
+      	cout << "WARNING: impact="<<impact<< endl;
+      if(impact<target_impact/2.)
+      	s.dr_block *= min(increase, target_impact/2./impact);
+      if(impact>target_impact*2.)
+      	s.dr_block *= target_impact*2./impact;
       
       // output
       Outputvsr(s, impact);
