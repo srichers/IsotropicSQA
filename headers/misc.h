@@ -194,9 +194,7 @@ void K(const double dr,
        vector<vector<vector<vector<double> > > > &K){
 
   const int NE = pmatrixm0[0].size();
-  vector<vector<MATRIX<complex<double>,NF,NF> > > 
-    Sa(NE,vector<MATRIX<complex<double>,NF,NF> >(NS)),
-    Sabar(NE,vector<MATRIX<complex<double>,NF,NF> >(NS));
+  vector<array<MATRIX<complex<double>,NF,NF>,NS> > Sa(NE), Sabar(NE);
   vector<MATRIX<complex<double>,NF,NF> > UWBW(NE), UWBWbar(NE);
   MATRIX<complex<double>,NF,NF> VfSI,VfSIbar;  // self-interaction potential
   vector<MATRIX<complex<double>,NF,NF> > VfSIE(NE); // SI potential from each energy
