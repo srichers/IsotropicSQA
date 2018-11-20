@@ -25,14 +25,111 @@
 //
 */
 
-struct State{
+inline double Ve(const double rho, const double Ye){
+  return (M_SQRT2*cgs::constants::GF/cgs::constants::Mp)*rho*Ye;
+}
+inline double Vmu(const double rho, const double Ye){ return 0.;}
+
+class State{
+ public:
   double rho, T, Ye;
   double r, dr_block, dr_osc, dr_int;
   int counter;
   EAS eas;
   vector<vector<MATRIX<complex<double>,NF,NF> > > fmatrixf;
   ofstream foutf;
+
+  // temporaries
+  vector<vector<double> > kV;
+  vector<MATRIX<complex<double>,NF,NF> > UV;
+  vector<vector<MATRIX<complex<double>,NF,NF> > > HfV,CV;
+  vector<array<array<double,NF>,NF> > AV;
+  MATRIX<complex<double>,NF,NF> VfMSW0, Hf0;
+  vector<vector< array<MATRIX<complex<double>,NF,NF>,NF> > > C0; // cofactor matrices at initial point
+  vector<vector< array<array<double,NF>,NF> > > A0; // mixing matrix element prefactors at initial point
+  vector<vector<MATRIX<complex<double>,NF,NF> > > U0;; // mixing angles to MSW basis at initial point
+
+  State(string nulibfilename, string eosfilename, double rho_in, double Ye_in, double T_in, double dr0, double mixing, bool do_interact){
+    r=0;
+    rho = rho_in;
+    T = T_in;
+    Ye = Ye_in;
+    eas = EAS(nulibfilename, eosfilename);
+    fmatrixf.resize(NM);
+    fmatrixf[matter]=fmatrixf[antimatter] = vector<MATRIX<complex<double>,NF,NF> >(eas.ng);
+    initialize(fmatrixf,eas,rho,T,Ye, mixing, do_interact);
+    dr_block = dr0;
+    dr_osc = dr0;
+    dr_int = dr0;
+    counter = 0;
+  
+    // vectors of energies and vacuum eigenvalues
+    kV  = set_kV(eas.E);
+    UV  = Evaluate_UV();
+    HfV = Evaluate_HfV(kV,UV);
+    CV  = Evaluate_CV(kV, HfV);
+    AV  = Evaluate_AV(kV,HfV,UV);
+    
+    // MSW potential matrix
+    VfMSW0[e][e]=Ve(rho,Ye);
+    VfMSW0[mu][mu]=Vmu(rho,Ye);
+    
+    // other matrices
+    C0.resize(NM);
+    A0.resize(NM);
+    U0.resize(NM);
+    for(int m=matter; m<=antimatter; m++){
+      C0[m] = vector<array<MATRIX<complex<double>,NF,NF>,NF> >(eas.ng);
+      A0[m] = vector<array<array<double,NF>,NF> >(eas.ng);
+      U0[m] = vector<MATRIX<complex<double>,NF,NF> >(eas.ng);
+    }
+  
+    for(int i=0;i<=eas.ng-1;i++){
+      MATRIX<complex<double>,NF,NF> Hf0;
+      array<double,NF> k0;
+      array<double,1> deltak0;
+
+      Hf0=HfV[matter][i]+VfMSW0;
+      k0=k(Hf0);
+      deltak0=deltak(Hf0);
+      C0[matter][i]=CofactorMatrices(Hf0,k0);
+      for(int j=0;j<=NF-1;j++){
+	if(real(C0[matter][i][j][mu][e]*CV[i][j][mu][e]) < 0.)
+	  A0[matter][i][j][e]=-AV[i][j][e];
+	else A0[matter][i][j][e]=AV[i][j][e];
+	A0[matter][i][j][mu]=AV[i][j][mu];
+      }
+      U0[matter][i]=U(deltak0,C0[matter][i],A0[matter][i]);
+      
+      Hf0=HfV[antimatter][i]-VfMSW0;
+      k0=kbar(Hf0);
+      deltak0=deltakbar(Hf0);
+      C0[antimatter][i]=CofactorMatrices(Hf0,k0);
+      for(int j=0;j<=NF-1;j++){
+	if(real(C0[antimatter][i][j][mu][e]*CV[i][j][mu][e]) < 0.)
+	  A0[antimatter][i][j][e]=-AV[i][j][e];
+	else A0[antimatter][i][j][e]=AV[i][j][e];
+	A0[antimatter][i][j][mu]=AV[i][j][mu];
+      }
+      U0[antimatter][i]=Conjugate(U(deltak0,C0[antimatter][i],A0[antimatter][i]));
+    }
+
+  }
 };
+
+void getP(const State& s, vector<vector<MATRIX<complex<double>,NF,NF> > >& pmatrixm0){
+  const int NE = s.eas.ng;
+
+  #pragma omp parallel for collapse(2)
+  for(int m=matter; m<=antimatter; m++){
+    for(int i=0; i<NE; i++){
+      pmatrixm0[m][i] = Adjoint(s.U0[m][i]) * s.fmatrixf[m][i] * s.U0[m][i]
+	* (M_SQRT2*cgs::constants::GF /* erg cm^3*/
+	   * 4.*M_PI*s.eas.nu[i]*s.eas.nu[i]*s.eas.dnu[i]/*Hz^3*/
+	   / pow(cgs::constants::c,3)/*cm^3 Hz^3*/);
+    }
+  }
+}
 
 template<typename T>
 T get_parameter(ifstream& fin, const char* name){
@@ -64,29 +161,6 @@ static const double* BB[]={ b0,b1,b2,b3,b4,b5 };
 static const double CC[]={ 37./378.,0.,250./621.,125./594.,0.,512./1771. };
 static const double DD[]={ 2825./27648.,0.,18575./48384.,13525./55296.,277./14336.,1./4. };
 
-inline double Ve(const double rho, const double Ye){
-  return (M_SQRT2*cgs::constants::GF/cgs::constants::Mp)*rho*Ye;
-}
-inline double Vmu(const double rho, const double Ye){ return 0.;}
-
-void getP(const vector<vector<MATRIX<complex<double>,NF,NF> > >& U0,
-	  const vector<vector<MATRIX<complex<double>,NF,NF> > >& fmatrixf0,
-	  const vector<double>& nu,
-	  const vector<double>& dnu,
-	  vector<vector<MATRIX<complex<double>,NF,NF> > >& pmatrixm0){
-  const int NE = pmatrixm0[0].size();
-
-  #pragma omp parallel for collapse(2)
-  for(int m=matter; m<=antimatter; m++){
-    for(int i=0; i<NE; i++){
-      pmatrixm0[m][i] = Adjoint(U0[m][i]) * fmatrixf0[m][i] * U0[m][i]
-	* (M_SQRT2*cgs::constants::GF /* erg cm^3*/
-	   * 4.*M_PI*nu[i]*nu[i]*dnu[i]/*Hz^3*/
-	   / pow(cgs::constants::c,3)/*cm^3 Hz^3*/);
-    }
-  }
-}
-
 //===//
 // B //
 //===//
@@ -117,13 +191,9 @@ MATRIX<complex<double>,NF,NF> W(const vector<double>& Y){
 // K //
 //===//
 void K(const double dr,
-       const double rho,
-       const double Ye,
+       const State& s,
        const vector<vector<MATRIX<complex<double>,NF,NF> > >& pmatrixm0,
-       const vector<vector<MATRIX<complex<double>,NF,NF> > >& HfV,
        const vector<vector<vector<vector<double> > > > &Y,
-       const vector<vector<array<MATRIX<complex<double>,NF,NF>,NF> > > &C0,
-       const vector<vector<array<array<double,NF>,NF> > > &A0,
        vector<vector<vector<vector<double> > > > &K){
 
   const int NE = pmatrixm0[0].size();
@@ -134,25 +204,25 @@ void K(const double dr,
   MATRIX<complex<double>,NF,NF> VfSI,VfSIbar;  // self-interaction potential
   vector<MATRIX<complex<double>,NF,NF> > VfSIE(NE); // SI potential from each energy
   MATRIX<complex<double>,NF,NF> VfMSW, VfMSWbar;
-  VfMSW[e][e]=Ve(rho,Ye);
-  VfMSW[mu][mu]=Vmu(rho,Ye);
+  VfMSW[e][e]=Ve(s.rho,s.Ye);
+  VfMSW[mu][mu]=Vmu(s.rho,s.Ye);
   VfMSWbar=-Conjugate(VfMSW);
 
 #pragma omp parallel
   {
 #pragma omp for
   for(int i=0; i<NE; i++){
-    MATRIX<complex<double>,NF,NF> Hf  = HfV[matter][i]+VfMSW;
+    MATRIX<complex<double>,NF,NF> Hf  = s.HfV[matter][i]+VfMSW;
     array<double,NF> kk  = k(Hf);
     array<double,1> dkk = deltak(Hf);
     array<MATRIX<complex<double>,NF,NF>,NF> CC = CofactorMatrices(Hf,kk);
-    array<array<double,NF>,NF> AA = MixingMatrixFactors(CC,C0[matter][i],A0[matter][i]);
+    array<array<double,NF>,NF> AA = MixingMatrixFactors(CC,s.C0[matter][i],s.A0[matter][i]);
     MATRIX<complex<double>,NF,NF> UU  = U(dkk,CC,AA);
     MATRIX<complex<double>,NF,NF> BB  = B(Y[matter][i][msw]);
     Sa[i][si] = B(Y[matter][i][si]);
     UWBW[i] = UU * W(Y[matter][i][msw]) * BB * W(Y[matter][i][si]);
     
-    MATRIX<complex<double>,NF,NF> Hfbar = HfV[antimatter][i] + VfMSWbar;
+    MATRIX<complex<double>,NF,NF> Hfbar = s.HfV[antimatter][i] + VfMSWbar;
     array<double,NF> kkbar = kbar(Hfbar);
     array<double,1> dkkbar = deltakbar(Hfbar);
     MATRIX<complex<double>,NF,NF> UUbar = Conjugate(U(dkkbar,CC,AA));

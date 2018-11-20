@@ -1,56 +1,4 @@
 void evolve_oscillations(State& s, const double rmax, const double accuracy, const double increase, const int step_output){
-  
-  // vectors of energies and vacuum eigenvalues
-  const vector<vector<double> > kV = set_kV(s.eas.E);
-  const vector<MATRIX<complex<double>,NF,NF> > UV = Evaluate_UV();
-  const vector<vector<MATRIX<complex<double>,NF,NF> > > HfV = Evaluate_HfV(kV,UV);
-  const vector<vector<MATRIX<complex<double>,NF,NF> > > CV = Evaluate_CV(kV, HfV);
-  const vector<array<array<double,NF>,NF> > AV = Evaluate_AV(kV,HfV,UV);
-    
-  // MSW potential matrix
-  MATRIX<complex<double>,NF,NF> VfMSW0, Hf0;
-  VfMSW0[e][e]=Ve(s.rho,s.Ye);
-  VfMSW0[mu][mu]=Vmu(s.rho,s.Ye);
-    
-  // other matrices
-  vector<vector< array<MATRIX<complex<double>,NF,NF>,NF> > > C0(NM); // cofactor matrices at initial point
-  vector<vector< array<array<double,NF>,NF> > > A0(NM); // mixing matrix element prefactors at initial point
-  vector<vector<MATRIX<complex<double>,NF,NF> > > U0(NM); // mixing angles to MSW basis at initial point
-  for(int m=matter; m<=antimatter; m++){
-    C0[m] = vector<array<MATRIX<complex<double>,NF,NF>,NF> >(s.eas.ng);
-    A0[m] = vector<array<array<double,NF>,NF> >(s.eas.ng);
-    U0[m] = vector<MATRIX<complex<double>,NF,NF> >(s.eas.ng);
-  }
-
-  for(int i=0;i<=s.eas.ng-1;i++){
-    MATRIX<complex<double>,NF,NF> Hf0;
-    array<double,NF> k0;
-    array<double,1> deltak0;
-
-    Hf0=HfV[matter][i]+VfMSW0;
-    k0=k(Hf0);
-    deltak0=deltak(Hf0);
-    C0[matter][i]=CofactorMatrices(Hf0,k0);
-    for(int j=0;j<=NF-1;j++){
-      if(real(C0[matter][i][j][mu][e]*CV[i][j][mu][e]) < 0.)
-	A0[matter][i][j][e]=-AV[i][j][e];
-      else A0[matter][i][j][e]=AV[i][j][e];
-      A0[matter][i][j][mu]=AV[i][j][mu];
-    }
-    U0[matter][i]=U(deltak0,C0[matter][i],A0[matter][i]);
-      
-    Hf0=HfV[antimatter][i]-VfMSW0;
-    k0=kbar(Hf0);
-    deltak0=deltakbar(Hf0);
-    C0[antimatter][i]=CofactorMatrices(Hf0,k0);
-    for(int j=0;j<=NF-1;j++){
-      if(real(C0[antimatter][i][j][mu][e]*CV[i][j][mu][e]) < 0.)
-	A0[antimatter][i][j][e]=-AV[i][j][e];
-      else A0[antimatter][i][j][e]=AV[i][j][e];
-      A0[antimatter][i][j][mu]=AV[i][j][mu];
-    }
-    U0[antimatter][i]=Conjugate(U(deltak0,C0[antimatter][i],A0[antimatter][i]));
-  }
     
   //********************
   // evolved variables *
@@ -73,7 +21,7 @@ void evolve_oscillations(State& s, const double rmax, const double accuracy, con
   
   do{ // loop over radii
     s.counter++;
-    getP(U0,s.fmatrixf,s.eas.nu,s.eas.dnu,pmatrixm0);
+    getP(s,pmatrixm0);
     
     double dr = s.dr_osc;
     bool repeat=false;
@@ -95,7 +43,7 @@ void evolve_oscillations(State& s, const double rmax, const double accuracy, con
 		for(int j=0;j<=NY-1;j++)
 		  Ytmp[m][i][x][j] += BB[k][l] * Ks[l][m][i][x][j];
 	  
-	K(dr,s.rho,s.Ye,pmatrixm0,HfV,Ytmp,C0,A0,Ks[k]);
+	K(dr,s,pmatrixm0,Ytmp,Ks[k]);
       }
 	  
       // increment all quantities from oscillation
@@ -151,7 +99,7 @@ void evolve_oscillations(State& s, const double rmax, const double accuracy, con
 	if(norm(SSMSW[m][i][0][0])+0.1<norm(SSMSW[m][i][0][1]) or
 	   norm(SSSI [m][i][0][0])+0.1<norm(SSSI [m][i][0][1]) or
 	   finish){
-	  MATRIX<complex<double>,NF,NF> SThisStep = U0[m][i] * SSMSW[m][i]*SSSI[m][i] * Adjoint(U0[m][i]);
+	  MATRIX<complex<double>,NF,NF> SThisStep = s.U0[m][i] * SSMSW[m][i]*SSSI[m][i] * Adjoint(s.U0[m][i]);
 	  s.fmatrixf[m][i] = SThisStep * s.fmatrixf[m][i] * Adjoint(SThisStep);
 	  Y[m][i] = YIdentity;
 	}

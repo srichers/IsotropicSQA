@@ -92,20 +92,9 @@ int main(int argc, char *argv[]){
   const int do_interact = get_parameter<int>(fin,"do_interact");
   cout.flush();
 
-  State s;
-  s.r=0;
-  s.rho = rho;
-  s.T = temperature;
-  s.Ye = Ye;
-  s.eas = EAS(nulibfilename, eosfilename);
-  s.fmatrixf.resize(NM);
-  s.fmatrixf[matter]=s.fmatrixf[antimatter] = vector<MATRIX<complex<double>,NF,NF> >(s.eas.ng);
-  initialize(s.fmatrixf,s.eas,s.rho,s.T,s.Ye, mixing, do_interact);
-  s.dr_block = dr0;
-  s.dr_osc = dr0;
-  s.dr_int = dr0;
-  s.counter = 0;
-  
+  // initialize the state
+  State s(nulibfilename, eosfilename, rho, Ye, temperature, dr0, mixing, do_interact);
+
   // random number generator - prevent aliasing in interactions and output
   srand(time(NULL));
 
