@@ -46,6 +46,7 @@ class State{
   vector<array<array<double,NF>,NF> > AV;
   array<vector<MATRIX<complex<double>,NF,NF> >,NM> U0; // mixing angles to MSW basis at initial point
   MATRIX<complex<double>,NF,NF> VfMSW, VfMSWbar;
+  array<vector< array<double,NF> >,NM> k0;
 
   
   State(string nulibfilename, string eosfilename, double rho_in, double Ye_in, double T_in, double dr0, double mixing, bool do_interact){
@@ -77,17 +78,17 @@ class State{
     // other matrices
     for(int m=matter; m<=antimatter; m++){
       U0[m] = vector<MATRIX<complex<double>,NF,NF> >(eas.ng);
+      k0[m] = vector<array<double,NF> >(eas.ng);
     }
   
     for(int i=0;i<=eas.ng-1;i++){
       MATRIX<complex<double>,NF,NF> Hf0;
-      array<double,NF> k0;
       array<double,1> deltak0;
 
       Hf0=HfV[matter][i]+VfMSW;
-      k0=k(Hf0);
+      k0[matter][i]=k(Hf0);
       deltak0=deltak(Hf0);
-      array<MATRIX<complex<double>,NF,NF>,NF> C0 = CofactorMatrices(Hf0,k0);
+      array<MATRIX<complex<double>,NF,NF>,NF> C0 = CofactorMatrices(Hf0,k0[matter][i]);
       array<array<double,NF>,NF> A0;
       for(int j=0;j<=NF-1;j++){
 	if(real(C0[j][mu][e]*CV[i][j][mu][e]) < 0.)
@@ -98,9 +99,9 @@ class State{
       U0[matter][i]=U(deltak0,C0,A0);
       
       Hf0=HfV[antimatter][i]+VfMSWbar;
-      k0=kbar(Hf0);
+      k0[antimatter][i]=kbar(Hf0);
       deltak0=deltakbar(Hf0);
-      C0=CofactorMatrices(Hf0,k0);
+      C0=CofactorMatrices(Hf0,k0[antimatter][i]);
       for(int j=0;j<=NF-1;j++){
 	if(real(C0[j][mu][e]*CV[i][j][mu][e]) < 0.)
 	  A0[j][e]=-AV[i][j][e];
@@ -202,14 +203,10 @@ void K(const double dr,
   {
 #pragma omp for
   for(int i=0; i<NE; i++){
-    MATRIX<complex<double>,NF,NF> Hf  = s.HfV[matter][i]+s.VfMSW;
-    array<double,NF> kk  = k(Hf);
     MATRIX<complex<double>,NF,NF> BB  = B(Y[matter][i][msw]);
     Sa[i][si] = B(Y[matter][i][si]);
     UWBW[i] = s.U0[matter][i] * W(Y[matter][i][msw]) * BB * W(Y[matter][i][si]);
     
-    MATRIX<complex<double>,NF,NF> Hfbar = s.HfV[antimatter][i] + s.VfMSWbar;
-    array<double,NF> kkbar = kbar(Hfbar);
     MATRIX<complex<double>,NF,NF> BBbar = B(Y[antimatter][i][msw]);
     Sabar[i][si] = B(Y[antimatter][i][si]);
     UWBWbar[i] = s.U0[matter][i] * W(Y[antimatter][i][msw]) *BBbar * W(Y[antimatter][i][si]);
@@ -219,16 +216,16 @@ void K(const double dr,
     // ****************
     for(int j=0;j<=3;j++)
       K[matter][i][msw][j] = 0.;
-    K[matter][i][msw][4] = kk[0]*dr/M_2PI/cgs::constants::hbarc;
-    K[matter][i][msw][5] = kk[1]*dr/M_2PI/cgs::constants::hbarc;
+    K[matter][i][msw][4] = s.k0[matter][i][0]*dr/M_2PI/cgs::constants::hbarc;
+    K[matter][i][msw][5] = s.k0[matter][i][1]*dr/M_2PI/cgs::constants::hbarc;
 
     // ********************
     // Antimatter section *
     // ********************
     for(int j=0;j<=3;j++)
       K[antimatter][i][msw][j] = 0.;
-    K[antimatter][i][msw][4] = kkbar[0]*dr/M_2PI/cgs::constants::hbarc;
-    K[antimatter][i][msw][5] = kkbar[1]*dr/M_2PI/cgs::constants::hbarc;
+    K[antimatter][i][msw][4] = s.k0[antimatter][i][0]*dr/M_2PI/cgs::constants::hbarc;
+    K[antimatter][i][msw][5] = s.k0[antimatter][i][1]*dr/M_2PI/cgs::constants::hbarc;
 
     // *****************************************************************
     // contribution to the self-interaction potential from this energy *
