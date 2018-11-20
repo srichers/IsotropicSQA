@@ -44,11 +44,12 @@ class State{
   vector<MATRIX<complex<double>,NF,NF> > UV;
   vector<vector<MATRIX<complex<double>,NF,NF> > > HfV,CV;
   vector<array<array<double,NF>,NF> > AV;
-  MATRIX<complex<double>,NF,NF> VfMSW0, Hf0;
   array<vector< array<MATRIX<complex<double>,NF,NF>,NF> >,NM> C0; // cofactor matrices at initial point
   array<vector< array<array<double,NF>,NF> >,NM> A0; // mixing matrix element prefactors at initial point
   array<vector<MATRIX<complex<double>,NF,NF> >,NM> U0; // mixing angles to MSW basis at initial point
+  MATRIX<complex<double>,NF,NF> VfMSW, VfMSWbar;
 
+  
   State(string nulibfilename, string eosfilename, double rho_in, double Ye_in, double T_in, double dr0, double mixing, bool do_interact){
     r=0;
     rho = rho_in;
@@ -71,8 +72,9 @@ class State{
     AV  = Evaluate_AV(kV,HfV,UV);
     
     // MSW potential matrix
-    VfMSW0[e][e]=Ve(rho,Ye);
-    VfMSW0[mu][mu]=Vmu(rho,Ye);
+    VfMSW[e][e]=Ve(rho,Ye);
+    VfMSW[mu][mu]=Vmu(rho,Ye);
+    VfMSWbar=-Conjugate(VfMSW);
     
     // other matrices
     for(int m=matter; m<=antimatter; m++){
@@ -86,7 +88,7 @@ class State{
       array<double,NF> k0;
       array<double,1> deltak0;
 
-      Hf0=HfV[matter][i]+VfMSW0;
+      Hf0=HfV[matter][i]+VfMSW;
       k0=k(Hf0);
       deltak0=deltak(Hf0);
       C0[matter][i]=CofactorMatrices(Hf0,k0);
@@ -98,7 +100,7 @@ class State{
       }
       U0[matter][i]=U(deltak0,C0[matter][i],A0[matter][i]);
       
-      Hf0=HfV[antimatter][i]-VfMSW0;
+      Hf0=HfV[antimatter][i]-VfMSW;
       k0=kbar(Hf0);
       deltak0=deltakbar(Hf0);
       C0[antimatter][i]=CofactorMatrices(Hf0,k0);
@@ -198,16 +200,12 @@ void K(const double dr,
   vector<MATRIX<complex<double>,NF,NF> > UWBW(NE), UWBWbar(NE);
   MATRIX<complex<double>,NF,NF> VfSI,VfSIbar;  // self-interaction potential
   vector<MATRIX<complex<double>,NF,NF> > VfSIE(NE); // SI potential from each energy
-  MATRIX<complex<double>,NF,NF> VfMSW, VfMSWbar;
-  VfMSW[e][e]=Ve(s.rho,s.Ye);
-  VfMSW[mu][mu]=Vmu(s.rho,s.Ye);
-  VfMSWbar=-Conjugate(VfMSW);
 
 #pragma omp parallel
   {
 #pragma omp for
   for(int i=0; i<NE; i++){
-    MATRIX<complex<double>,NF,NF> Hf  = s.HfV[matter][i]+VfMSW;
+    MATRIX<complex<double>,NF,NF> Hf  = s.HfV[matter][i]+s.VfMSW;
     array<double,NF> kk  = k(Hf);
     array<double,1> dkk = deltak(Hf);
     array<MATRIX<complex<double>,NF,NF>,NF> CC = CofactorMatrices(Hf,kk);
@@ -217,7 +215,7 @@ void K(const double dr,
     Sa[i][si] = B(Y[matter][i][si]);
     UWBW[i] = UU * W(Y[matter][i][msw]) * BB * W(Y[matter][i][si]);
     
-    MATRIX<complex<double>,NF,NF> Hfbar = s.HfV[antimatter][i] + VfMSWbar;
+    MATRIX<complex<double>,NF,NF> Hfbar = s.HfV[antimatter][i] + s.VfMSWbar;
     array<double,NF> kkbar = kbar(Hfbar);
     array<double,1> dkkbar = deltakbar(Hfbar);
     MATRIX<complex<double>,NF,NF> UUbar = Conjugate(U(dkkbar,CC,AA));
