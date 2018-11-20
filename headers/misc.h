@@ -45,9 +45,9 @@ class State{
   vector<vector<MATRIX<complex<double>,NF,NF> > > HfV,CV;
   vector<array<array<double,NF>,NF> > AV;
   MATRIX<complex<double>,NF,NF> VfMSW0, Hf0;
-  vector<vector< array<MATRIX<complex<double>,NF,NF>,NF> > > C0; // cofactor matrices at initial point
-  vector<vector< array<array<double,NF>,NF> > > A0; // mixing matrix element prefactors at initial point
-  vector<vector<MATRIX<complex<double>,NF,NF> > > U0;; // mixing angles to MSW basis at initial point
+  array<vector< array<MATRIX<complex<double>,NF,NF>,NF> >,NM> C0; // cofactor matrices at initial point
+  array<vector< array<array<double,NF>,NF> >,NM> A0; // mixing matrix element prefactors at initial point
+  array<vector<MATRIX<complex<double>,NF,NF> >,NM> U0; // mixing angles to MSW basis at initial point
 
   State(string nulibfilename, string eosfilename, double rho_in, double Ye_in, double T_in, double dr0, double mixing, bool do_interact){
     r=0;
@@ -75,9 +75,6 @@ class State{
     VfMSW0[mu][mu]=Vmu(rho,Ye);
     
     // other matrices
-    C0.resize(NM);
-    A0.resize(NM);
-    U0.resize(NM);
     for(int m=matter; m<=antimatter; m++){
       C0[m] = vector<array<MATRIX<complex<double>,NF,NF>,NF> >(eas.ng);
       A0[m] = vector<array<array<double,NF>,NF> >(eas.ng);
