@@ -44,8 +44,6 @@ class State{
   vector<MATRIX<complex<double>,NF,NF> > UV;
   vector<vector<MATRIX<complex<double>,NF,NF> > > HfV,CV;
   vector<array<array<double,NF>,NF> > AV;
-  array<vector< array<MATRIX<complex<double>,NF,NF>,NF> >,NM> C0; // cofactor matrices at initial point
-  array<vector< array<array<double,NF>,NF> >,NM> A0; // mixing matrix element prefactors at initial point
   array<vector<MATRIX<complex<double>,NF,NF> >,NM> U0; // mixing angles to MSW basis at initial point
   MATRIX<complex<double>,NF,NF> VfMSW, VfMSWbar;
 
@@ -78,8 +76,6 @@ class State{
     
     // other matrices
     for(int m=matter; m<=antimatter; m++){
-      C0[m] = vector<array<MATRIX<complex<double>,NF,NF>,NF> >(eas.ng);
-      A0[m] = vector<array<array<double,NF>,NF> >(eas.ng);
       U0[m] = vector<MATRIX<complex<double>,NF,NF> >(eas.ng);
     }
   
@@ -91,26 +87,27 @@ class State{
       Hf0=HfV[matter][i]+VfMSW;
       k0=k(Hf0);
       deltak0=deltak(Hf0);
-      C0[matter][i]=CofactorMatrices(Hf0,k0);
+      array<MATRIX<complex<double>,NF,NF>,NF> C0 = CofactorMatrices(Hf0,k0);
+      array<array<double,NF>,NF> A0;
       for(int j=0;j<=NF-1;j++){
-	if(real(C0[matter][i][j][mu][e]*CV[i][j][mu][e]) < 0.)
-	  A0[matter][i][j][e]=-AV[i][j][e];
-	else A0[matter][i][j][e]=AV[i][j][e];
-	A0[matter][i][j][mu]=AV[i][j][mu];
+	if(real(C0[j][mu][e]*CV[i][j][mu][e]) < 0.)
+	  A0[j][e]=-AV[i][j][e];
+	else A0[j][e]=AV[i][j][e];
+	A0[j][mu]=AV[i][j][mu];
       }
-      U0[matter][i]=U(deltak0,C0[matter][i],A0[matter][i]);
+      U0[matter][i]=U(deltak0,C0,A0);
       
-      Hf0=HfV[antimatter][i]-VfMSW;
+      Hf0=HfV[antimatter][i]+VfMSWbar;
       k0=kbar(Hf0);
       deltak0=deltakbar(Hf0);
-      C0[antimatter][i]=CofactorMatrices(Hf0,k0);
+      C0=CofactorMatrices(Hf0,k0);
       for(int j=0;j<=NF-1;j++){
-	if(real(C0[antimatter][i][j][mu][e]*CV[i][j][mu][e]) < 0.)
-	  A0[antimatter][i][j][e]=-AV[i][j][e];
-	else A0[antimatter][i][j][e]=AV[i][j][e];
-	A0[antimatter][i][j][mu]=AV[i][j][mu];
+	if(real(C0[j][mu][e]*CV[i][j][mu][e]) < 0.)
+	  A0[j][e]=-AV[i][j][e];
+	else A0[j][e]=AV[i][j][e];
+	A0[j][mu]=AV[i][j][mu];
       }
-      U0[antimatter][i]=Conjugate(U(deltak0,C0[antimatter][i],A0[antimatter][i]));
+      U0[antimatter][i]=Conjugate(U(deltak0,C0,A0));
     }
 
   }
@@ -207,21 +204,15 @@ void K(const double dr,
   for(int i=0; i<NE; i++){
     MATRIX<complex<double>,NF,NF> Hf  = s.HfV[matter][i]+s.VfMSW;
     array<double,NF> kk  = k(Hf);
-    array<double,1> dkk = deltak(Hf);
-    array<MATRIX<complex<double>,NF,NF>,NF> CC = CofactorMatrices(Hf,kk);
-    array<array<double,NF>,NF> AA = MixingMatrixFactors(CC,s.C0[matter][i],s.A0[matter][i]);
-    MATRIX<complex<double>,NF,NF> UU  = U(dkk,CC,AA);
     MATRIX<complex<double>,NF,NF> BB  = B(Y[matter][i][msw]);
     Sa[i][si] = B(Y[matter][i][si]);
-    UWBW[i] = UU * W(Y[matter][i][msw]) * BB * W(Y[matter][i][si]);
+    UWBW[i] = s.U0[matter][i] * W(Y[matter][i][msw]) * BB * W(Y[matter][i][si]);
     
     MATRIX<complex<double>,NF,NF> Hfbar = s.HfV[antimatter][i] + s.VfMSWbar;
     array<double,NF> kkbar = kbar(Hfbar);
-    array<double,1> dkkbar = deltakbar(Hfbar);
-    MATRIX<complex<double>,NF,NF> UUbar = Conjugate(U(dkkbar,CC,AA));
     MATRIX<complex<double>,NF,NF> BBbar = B(Y[antimatter][i][msw]);
     Sabar[i][si] = B(Y[antimatter][i][si]);
-    UWBWbar[i] = UUbar * W(Y[antimatter][i][msw]) *BBbar * W(Y[antimatter][i][si]);
+    UWBWbar[i] = s.U0[matter][i] * W(Y[antimatter][i][msw]) *BBbar * W(Y[antimatter][i][si]);
     
     // ****************
     // Matter section *
