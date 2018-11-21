@@ -10,8 +10,7 @@ void evolve_oscillations(State& s, const double rmax, const double accuracy, con
       Y[m][i] = YIdentity;
     
   // temporaries
-  vector<vector<MATRIX<complex<double>,NF,NF> > > SSMSW(s.fmatrixf), SSSI(s.fmatrixf);
-  vector<vector<MATRIX<complex<double>,NF,NF> > > pmatrixm0(s.fmatrixf);
+  array<array<MATRIX<complex<double>,NF,NF>,NE>,NM> SSMSW, SSSI, pmatrixm0;
   vector<vector<vector<vector<double> > > >  Ytmp(Y);
   vector<vector<vector<vector<vector<double> > > > > Ks(NRK);
   for(int j=0; j<NRK; j++) Ks[j] = Y;
@@ -130,8 +129,8 @@ void evolve_oscillations(State& s, const double rmax, const double accuracy, con
 
 void evolve_interactions(State& s, const double rmax, const double accuracy, const double increase){
 
-  vector<vector<MATRIX<complex<double>,NF,NF> > > ftmp;
-  array<vector<vector<MATRIX<complex<double>,NF,NF> > >,NRK> dfdr;
+  array<array<MATRIX<complex<double>,NF,NF>,NE>,NM> ftmp;
+  array<array<array<MATRIX<complex<double>,NF,NF>,NE>,NM>,NRK> dfdr;
 
   bool finish=false;
   s.counter++;

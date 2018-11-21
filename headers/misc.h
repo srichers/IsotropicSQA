@@ -36,7 +36,7 @@ class State{
   double r, dr_block, dr_osc, dr_int;
   int counter;
   EAS eas;
-  vector<vector<MATRIX<complex<double>,NF,NF> > > fmatrixf;
+  array<array<MATRIX<complex<double>,NF,NF>,NE>,NM> fmatrixf;
   ofstream foutf;
 
   // temporaries
@@ -58,8 +58,6 @@ class State{
     T = T_in;
     Ye = Ye_in;
     eas = EAS(nulibfilename, eosfilename);
-    fmatrixf.resize(NM);
-    fmatrixf[matter]=fmatrixf[antimatter] = vector<MATRIX<complex<double>,NF,NF> >(eas.ng);
     initialize(fmatrixf,eas,rho,T,Ye, mixing, do_interact);
     dr_block = dr0;
     dr_osc = dr0;
@@ -99,7 +97,7 @@ class State{
   }
 };
 
-void getP(const State& s, vector<vector<MATRIX<complex<double>,NF,NF> > >& pmatrixm0){
+void getP(const State& s, array<array<MATRIX<complex<double>,NF,NF>,NE>,NM>& pmatrixm0){
   #pragma omp parallel for collapse(2)
   for(int m=matter; m<=antimatter; m++){
     for(int i=0; i<NE; i++){
@@ -172,7 +170,7 @@ MATRIX<complex<double>,NF,NF> W(const vector<double>& Y){
 //===//
 void K(const double dr,
        State& s,
-       const vector<vector<MATRIX<complex<double>,NF,NF> > >& pmatrixm0,
+       const array<array<MATRIX<complex<double>,NF,NF>,NE>,NM>& pmatrixm0,
        const vector<vector<vector<vector<double> > > > &Y,
        vector<vector<vector<vector<double> > > > &K){
 

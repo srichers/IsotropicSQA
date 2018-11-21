@@ -99,7 +99,7 @@ int main(int argc, char *argv[]){
   srand(time(NULL));
 
   // temporary variable
-  vector<vector<MATRIX<complex<double>,NF,NF> > > fmatrixf0 = s.fmatrixf;
+  array<array<MATRIX<complex<double>,NF,NF>,NE>,NM> fmatrixf0 = s.fmatrixf;
   
   // set up output file
   s.foutf.open("f.dat");

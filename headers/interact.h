@@ -30,7 +30,7 @@
 //============//
 // Initialize //
 //============//
-void initialize(vector<vector<MATRIX<complex<double>,NF,NF> > >& fmatrixf,
+void initialize(array<array<MATRIX<complex<double>,NF,NF>,NE>,NM>& fmatrixf,
 		EAS& eas,
 		const double rho,
 		const double T,
@@ -129,11 +129,11 @@ MATRIX<complex<double>,2,2> blocking_term0(const MATRIX<double,2,2>& Phi0matrix,
 //=============//
 // MY_INTERACT //
 //=============//
-vector<vector<MATRIX<complex<double>,NF,NF> > > my_interact
-  (const vector<vector<MATRIX<complex<double>,NF,NF> > >& fmatrixf,
+array<array<MATRIX<complex<double>,NF,NF>,NE>,NM> my_interact
+  (const array<array<MATRIX<complex<double>,NF,NF>,NE>,NM>& fmatrixf,
    const double rho, const double T, const double Ye, const EAS& eas){
 
-  vector<vector<MATRIX<complex<double>,NF,NF> > > dfdr(2, vector<MATRIX<complex<double>,NF,NF> >(NE));
+  array<array<MATRIX<complex<double>,NF,NF>,NE>,NM> dfdr;
 
   // don't do anything if too sparse
   if(log10(rho) <= __nulibtable_MOD_nulibtable_logrho_min)
