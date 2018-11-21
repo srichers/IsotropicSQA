@@ -3,16 +3,15 @@ void evolve_oscillations(State& s, const double rmax, const double accuracy, con
   //********************
   // evolved variables *
   //********************
-  array<array<vector<vector<double> >,NE>,NM> Y;
+  array<array<array<array<double,NY>,NS>,NE>,NM> Y;
   for(state m=matter;m<=antimatter;m++)
     for(int i=0;i<NE;i++)
       Y[m][i] = YIdentity;
     
   // temporaries
   array<array<MATRIX<complex<double>,NF,NF>,NE>,NM> SSMSW, SSSI, pmatrixm0;
-  array<array<vector<vector<double> >,NE>,NM>  Ytmp(Y);
-  vector<array<array<vector<vector<double> >,NE>,NM> > Ks(NRK);
-  for(int j=0; j<NRK; j++) Ks[j] = Y;
+  array<array<array<array<double,NY>,NS>,NE>,NM>  Ytmp(Y);
+  array<array<array<array<array<double,NY>,NS>,NE>,NM>,NRK> Ks;
   
   bool finish=false;
   int next_output = step_output>0 ? rand()%step_output+1 : -1;

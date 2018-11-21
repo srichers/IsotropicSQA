@@ -142,7 +142,7 @@ static const double DD[]={ 2825./27648.,0.,18575./48384.,13525./55296.,277./1433
 //===//
 // B //
 //===//
-MATRIX<complex<double>,NF,NF> B(const vector<double>& y){
+MATRIX<complex<double>,NF,NF> B(const array<double,NY>& y){
   MATRIX<complex<double>,NF,NF> s;
   double cPsi1=cos(y[0]),sPsi1=sin(y[0]), cPsi2=cos(y[1]),sPsi2=sin(y[1]), cPsi3=cos(y[2]),sPsi3=sin(y[2]);
   
@@ -159,7 +159,7 @@ MATRIX<complex<double>,NF,NF> B(const vector<double>& y){
 //===//
 // W //
 //===//
-MATRIX<complex<double>,NF,NF> W(const vector<double>& Y){
+MATRIX<complex<double>,NF,NF> W(const array<double,NY>& Y){
   MATRIX<complex<double>,NF,NF> w;
   w[0][0]=exp(-I*M_2PI*Y[4]); w[1][1]=exp(-I*M_2PI*Y[5]);
   return w;
@@ -171,8 +171,8 @@ MATRIX<complex<double>,NF,NF> W(const vector<double>& Y){
 void K(const double dr,
        State& s,
        const array<array<MATRIX<complex<double>,NF,NF>,NE>,NM>& pmatrixm0,
-       const array<array<vector<vector<double> >,NE>,NM> &Y,
-       array<array<vector<vector<double> >,NE>,NM> &K){
+       const array<array<array<array<double,NY>,NS>,NE>,NM> &Y,
+       array<array<array<array<double,NY>,NS>,NE>,NM> &K){
 
   array<MATRIX<complex<double>,NF,NF>,NM> VfSI;  // self-interaction potential
 

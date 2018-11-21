@@ -31,7 +31,7 @@
 //==========//
 // JInverse //
 //==========//
-MATRIX<double,3,4> JInverse(const vector<double>& y){
+MATRIX<double,3,4> JInverse(const array<double,NY>& y){
   MATRIX<double,3,4> j;
   
   double cPsi1=cos(y[0]), sPsi1=sin(y[0]);
