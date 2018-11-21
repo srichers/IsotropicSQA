@@ -45,7 +45,7 @@ class State{
   vector<vector<MATRIX<complex<double>,NF,NF> > > HfV,CV;
   vector<array<array<double,NF>,NF> > AV;
   array<vector<MATRIX<complex<double>,NF,NF> >,NM> U0; // mixing angles to MSW basis at initial point
-  MATRIX<complex<double>,NF,NF> VfMSW, VfMSWbar;
+  array<MATRIX<complex<double>,NF,NF>,NM> VfMSW;
   array<vector< array<double,NF> >,NM> k0;
 
   
@@ -71,46 +71,30 @@ class State{
     AV  = Evaluate_AV(kV,HfV,UV);
     
     // MSW potential matrix
-    VfMSW[e][e]=Ve(rho,Ye);
-    VfMSW[mu][mu]=Vmu(rho,Ye);
-    VfMSWbar=-Conjugate(VfMSW);
+    VfMSW[matter][e][e]=Ve(rho,Ye);
+    VfMSW[matter][mu][mu]=Vmu(rho,Ye);
+    VfMSW[antimatter]=-Conjugate(VfMSW[matter]);
     
     // other matrices
     for(int m=matter; m<=antimatter; m++){
       U0[m] = vector<MATRIX<complex<double>,NF,NF> >(eas.ng);
       k0[m] = vector<array<double,NF> >(eas.ng);
-    }
-  
-    for(int i=0;i<=eas.ng-1;i++){
-      MATRIX<complex<double>,NF,NF> Hf0;
-      array<double,1> deltak0;
 
-      Hf0=HfV[matter][i]+VfMSW;
-      k0[matter][i]=k(Hf0);
-      deltak0=deltak(Hf0);
-      array<MATRIX<complex<double>,NF,NF>,NF> C0 = CofactorMatrices(Hf0,k0[matter][i]);
-      array<array<double,NF>,NF> A0;
-      for(int j=0;j<=NF-1;j++){
-	if(real(C0[j][mu][e]*CV[i][j][mu][e]) < 0.)
-	  A0[j][e]=-AV[i][j][e];
-	else A0[j][e]=AV[i][j][e];
-	A0[j][mu]=AV[i][j][mu];
+      for(int i=0;i<=eas.ng-1;i++){
+	MATRIX<complex<double>,NF,NF> Hf0=HfV[m][i]+ VfMSW[m];
+	k0[m][i] = (m==matter? k(Hf0) : kbar(Hf0) );
+	array<double,1> deltak0 = (m==matter ? deltak(Hf0) : deltakbar(Hf0) );
+	array<MATRIX<complex<double>,NF,NF>,NF> C0 = CofactorMatrices(Hf0,k0[m][i]);
+	array<array<double,NF>,NF> A0;
+	for(int j=0;j<=NF-1;j++){
+	  if(real(C0[j][mu][e]*CV[i][j][mu][e]) < 0.)
+	    A0[j][e]=-AV[i][j][e];
+	  else A0[j][e]=AV[i][j][e];
+	  A0[j][mu]=AV[i][j][mu];
+	}
+	U0[m][i]=U(deltak0,C0,A0);
       }
-      U0[matter][i]=U(deltak0,C0,A0);
-      
-      Hf0=HfV[antimatter][i]+VfMSWbar;
-      k0[antimatter][i]=kbar(Hf0);
-      deltak0=deltakbar(Hf0);
-      C0=CofactorMatrices(Hf0,k0[antimatter][i]);
-      for(int j=0;j<=NF-1;j++){
-	if(real(C0[j][mu][e]*CV[i][j][mu][e]) < 0.)
-	  A0[j][e]=-AV[i][j][e];
-	else A0[j][e]=AV[i][j][e];
-	A0[j][mu]=AV[i][j][mu];
-      }
-      U0[antimatter][i]=Conjugate(U(deltak0,C0,A0));
     }
-
   }
 };
 
