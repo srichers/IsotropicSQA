@@ -184,60 +184,32 @@ void K(const double dr,
 
   const int NE = pmatrixm0[0].size();
   MATRIX<complex<double>,NF,NF> VfSI,VfSIbar;  // self-interaction potential
-  vector<MATRIX<complex<double>,NF,NF> > VfSIE(NE); // SI potential from each energy
 
 #pragma omp parallel
   {
-#pragma omp for
-  for(int i=0; i<NE; i++){
-    //MATRIX<complex<double>,NF,NF> BB;
-
-    /* BB = B(Y[matter][i][msw]); */
-    /* s.Sa[matter][i][si] = B(Y[matter][i][si]); */
-    /* s.UWBW[matter][i] = s.U0[matter][i] * W(Y[matter][i][msw]) * BB * W(Y[matter][i][si]); */
-    
-    /* BB = B(Y[antimatter][i][msw]); */
-    /* s.Sa[antimatter][i][si] = B(Y[antimatter][i][si]); */
-    /* s.UWBW[antimatter][i] = s.U0[matter][i] * W(Y[antimatter][i][msw]) *BB * W(Y[antimatter][i][si]); */
-
-    for(int m=matter; m<=antimatter; m++){
+  #pragma omp for collapse(2)
+  for(int m=matter; m<=antimatter; m++){
+    for(int i=0; i<NE; i++){
       MATRIX<complex<double>,NF,NF> BB  = B(Y[m][i][msw]);
       s.Sa[m][i][si] = B(Y[m][i][si]);
       s.UWBW[m][i] = s.U0[m][i] * W(Y[m][i][msw]) * BB * W(Y[m][i][si]);
+
+      for(int j=0;j<=3;j++)
+	K[m][i][msw][j] = 0.;
+      K[m][i][msw][4] = s.k0[m][i][0]*dr/M_2PI/cgs::constants::hbarc;
+      K[m][i][msw][5] = s.k0[m][i][1]*dr/M_2PI/cgs::constants::hbarc;
+
+      // contribution to the self-interaction potential from this energy *
+      MATRIX<complex<double>,NF,NF> Sfm = s.UWBW[m][i] * s.Sa[m][i][si];
+      MATRIX<complex<double>,NF,NF> VfSIE = Sfm*pmatrixm0[m][i]*Adjoint(Sfm);
+      if(m==antimatter) VfSIE = -Conjugate(VfSIE);
+      #pragma omp critical
+      VfSI += VfSIE;
     }
-
-    
-    // ****************
-    // Matter section *
-    // ****************
-    for(int j=0;j<=3;j++)
-      K[matter][i][msw][j] = 0.;
-    K[matter][i][msw][4] = s.k0[matter][i][0]*dr/M_2PI/cgs::constants::hbarc;
-    K[matter][i][msw][5] = s.k0[matter][i][1]*dr/M_2PI/cgs::constants::hbarc;
-
-    // ********************
-    // Antimatter section *
-    // ********************
-    for(int j=0;j<=3;j++)
-      K[antimatter][i][msw][j] = 0.;
-    K[antimatter][i][msw][4] = s.k0[antimatter][i][0]*dr/M_2PI/cgs::constants::hbarc;
-    K[antimatter][i][msw][5] = s.k0[antimatter][i][1]*dr/M_2PI/cgs::constants::hbarc;
-
-    // *****************************************************************
-    // contribution to the self-interaction potential from this energy *
-    // *****************************************************************
-    MATRIX<complex<double>,NF,NF> Sfm    = s.UWBW[matter][i] * s.Sa[matter][i][si];
-    MATRIX<complex<double>,NF,NF> Sfmbar = s.UWBW[antimatter][i] * s.Sa[antimatter][i][si];
-    VfSIE[i] = Sfm*pmatrixm0[matter][i]*Adjoint(Sfm) -
-      Conjugate(Sfmbar*pmatrixm0[antimatter][i]*Adjoint(Sfmbar));
-  }//end for loop over i
+  }
 
   #pragma omp single
-  {
-    for(int i=0; i<NE; i++)
-      VfSI += VfSIE[i];
-    VfSIbar=-Conjugate(VfSI);
-  }
+  VfSIbar=-Conjugate(VfSI);
 
   // *********************
   // SI part of solution *
