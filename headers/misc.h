@@ -42,7 +42,8 @@ class State{
   // temporaries
   vector<array<double,NF> > kV;
   vector<MATRIX<complex<double>,NF,NF> > UV;
-  vector<vector<MATRIX<complex<double>,NF,NF> > > HfV,CV;
+  array<vector<MATRIX<complex<double>,NF,NF> >,NM> HfV;
+  vector<array<MATRIX<complex<double>,NF,NF>,NF> > CV;
   vector<array<array<double,NF>,NF> > AV;
   array<vector<MATRIX<complex<double>,NF,NF> >,NM> U0; // mixing angles to MSW basis at initial point
   array<MATRIX<complex<double>,NF,NF>,NM> VfMSW;
