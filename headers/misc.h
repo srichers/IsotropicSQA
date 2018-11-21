@@ -47,6 +47,8 @@ class State{
   array<vector<MATRIX<complex<double>,NF,NF> >,NM> U0; // mixing angles to MSW basis at initial point
   array<MATRIX<complex<double>,NF,NF>,NM> VfMSW;
   array<vector< array<double,NF> >,NM> k0;
+  array<vector<MATRIX<complex<double>,NF,NF> >,NM> UWBW;
+  array<vector<array<MATRIX<complex<double>,NF,NF>,NS> >,NM> Sa;
 
   
   State(string nulibfilename, string eosfilename, double rho_in, double Ye_in, double T_in, double dr0, double mixing, bool do_interact){
@@ -79,7 +81,9 @@ class State{
     for(int m=matter; m<=antimatter; m++){
       U0[m] = vector<MATRIX<complex<double>,NF,NF> >(eas.ng);
       k0[m] = vector<array<double,NF> >(eas.ng);
-
+      UWBW[m] = vector<MATRIX<complex<double>,NF,NF> >(eas.ng);
+      Sa[m] = vector<array<MATRIX<complex<double>,NF,NF>,NS> >(eas.ng);
+      
       for(int i=0;i<=eas.ng-1;i++){
 	MATRIX<complex<double>,NF,NF> Hf0=HfV[m][i]+ VfMSW[m];
 	k0[m][i] = (m==matter? k(Hf0) : kbar(Hf0) );
@@ -93,6 +97,7 @@ class State{
 	  A0[j][mu]=AV[i][j][mu];
 	}
 	U0[m][i]=U(deltak0,C0,A0);
+	if(m==antimatter) U0[m][i] = Conjugate(U0[m][i]);
       }
     }
   }
@@ -172,14 +177,12 @@ MATRIX<complex<double>,NF,NF> W(const vector<double>& Y){
 // K //
 //===//
 void K(const double dr,
-       const State& s,
+       State& s,
        const vector<vector<MATRIX<complex<double>,NF,NF> > >& pmatrixm0,
        const vector<vector<vector<vector<double> > > > &Y,
        vector<vector<vector<vector<double> > > > &K){
 
   const int NE = pmatrixm0[0].size();
-  vector<array<MATRIX<complex<double>,NF,NF>,NS> > Sa(NE), Sabar(NE);
-  vector<MATRIX<complex<double>,NF,NF> > UWBW(NE), UWBWbar(NE);
   MATRIX<complex<double>,NF,NF> VfSI,VfSIbar;  // self-interaction potential
   vector<MATRIX<complex<double>,NF,NF> > VfSIE(NE); // SI potential from each energy
 
@@ -187,13 +190,22 @@ void K(const double dr,
   {
 #pragma omp for
   for(int i=0; i<NE; i++){
-    MATRIX<complex<double>,NF,NF> BB  = B(Y[matter][i][msw]);
-    Sa[i][si] = B(Y[matter][i][si]);
-    UWBW[i] = s.U0[matter][i] * W(Y[matter][i][msw]) * BB * W(Y[matter][i][si]);
+    //MATRIX<complex<double>,NF,NF> BB;
+
+    /* BB = B(Y[matter][i][msw]); */
+    /* s.Sa[matter][i][si] = B(Y[matter][i][si]); */
+    /* s.UWBW[matter][i] = s.U0[matter][i] * W(Y[matter][i][msw]) * BB * W(Y[matter][i][si]); */
     
-    MATRIX<complex<double>,NF,NF> BBbar = B(Y[antimatter][i][msw]);
-    Sabar[i][si] = B(Y[antimatter][i][si]);
-    UWBWbar[i] = s.U0[matter][i] * W(Y[antimatter][i][msw]) *BBbar * W(Y[antimatter][i][si]);
+    /* BB = B(Y[antimatter][i][msw]); */
+    /* s.Sa[antimatter][i][si] = B(Y[antimatter][i][si]); */
+    /* s.UWBW[antimatter][i] = s.U0[matter][i] * W(Y[antimatter][i][msw]) *BB * W(Y[antimatter][i][si]); */
+
+    for(int m=matter; m<=antimatter; m++){
+      MATRIX<complex<double>,NF,NF> BB  = B(Y[m][i][msw]);
+      s.Sa[m][i][si] = B(Y[m][i][si]);
+      s.UWBW[m][i] = s.U0[m][i] * W(Y[m][i][msw]) * BB * W(Y[m][i][si]);
+    }
+
     
     // ****************
     // Matter section *
@@ -214,8 +226,8 @@ void K(const double dr,
     // *****************************************************************
     // contribution to the self-interaction potential from this energy *
     // *****************************************************************
-    MATRIX<complex<double>,NF,NF> Sfm    = UWBW   [i] * Sa   [i][si];
-    MATRIX<complex<double>,NF,NF> Sfmbar = UWBWbar[i] * Sabar[i][si];
+    MATRIX<complex<double>,NF,NF> Sfm    = s.UWBW[matter][i] * s.Sa[matter][i][si];
+    MATRIX<complex<double>,NF,NF> Sfmbar = s.UWBW[antimatter][i] * s.Sa[antimatter][i][si];
     VfSIE[i] = Sfm*pmatrixm0[matter][i]*Adjoint(Sfm) -
       Conjugate(Sfmbar*pmatrixm0[antimatter][i]*Adjoint(Sfmbar));
   }//end for loop over i
@@ -239,13 +251,13 @@ void K(const double dr,
     //*********
     // Matter *
     //*********    
-    Ha = Adjoint(UWBW[i])*VfSI*UWBW[i];
+    Ha = Adjoint(s.UWBW[matter][i])*VfSI*s.UWBW[matter][i];
   
     K[matter][i][si][4]=dr*real(Ha[0][0])/(M_2PI*cgs::constants::hbarc);
     K[matter][i][si][5]=dr*real(Ha[1][1])/(M_2PI*cgs::constants::hbarc);
     
-    HB[0][0]=-I/cgs::constants::hbarc*( Ha[0][1]*Sa[i][si][1][0] );
-    HB[0][1]=-I/cgs::constants::hbarc*( Ha[0][1]*Sa[i][si][1][1] );
+    HB[0][0]=-I/cgs::constants::hbarc*( Ha[0][1]*s.Sa[matter][i][si][1][0] );
+    HB[0][1]=-I/cgs::constants::hbarc*( Ha[0][1]*s.Sa[matter][i][si][1][1] );
     
     dvdr[0]=real(HB[0][1]);
     dvdr[1]=imag(HB[0][1]);
@@ -265,13 +277,13 @@ void K(const double dr,
     //*************
     // Antimatter *
     //*************
-    Ha=Adjoint(UWBWbar[i])*VfSIbar*UWBWbar[i];
+    Ha=Adjoint(s.UWBW[antimatter][i])*VfSIbar*s.UWBW[antimatter][i];
 
     K[antimatter][i][si][4]=dr*real(Ha[0][0])/(M_2PI*cgs::constants::hbarc);
     K[antimatter][i][si][5]=dr*real(Ha[1][1])/(M_2PI*cgs::constants::hbarc);
 
-    HB[0][0]=-I/cgs::constants::hbarc*( Ha[0][1]*Sabar[i][si][1][0] );
-    HB[0][1]=-I/cgs::constants::hbarc*( Ha[0][1]*Sabar[i][si][1][1] );
+    HB[0][0]=-I/cgs::constants::hbarc*( Ha[0][1]*s.Sa[antimatter][i][si][1][0] );
+    HB[0][1]=-I/cgs::constants::hbarc*( Ha[0][1]*s.Sa[antimatter][i][si][1][1] );
 
     dvdr[0]=real(HB[0][1]);
     dvdr[1]=imag(HB[0][1]);
