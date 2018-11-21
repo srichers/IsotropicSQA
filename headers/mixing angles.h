@@ -103,9 +103,9 @@ MixingMatrixFactors(const array<MATRIX<complex<double>,NF,NF>,NF> &C,
 //===================//
 // Vacuum Potentials //
 //===================//
-vector<array<double,NF> > set_kV(const vector<double>& E){
+array<array<double,NF>,NE> set_kV(const array<double,NE>& E){
   assert(NF==2);
-  vector<array<double,NF> > kV(NE);
+  array<array<double,NF>,NE> kV;
   for(int i=0;i<NE;i++){
     kV[i][0] = m1*m1             * cgs::constants::c4 /2./E[i];
     kV[i][1] = (kV[i][0] + dm21) * cgs::constants::c4 /2./E[i];
@@ -129,13 +129,11 @@ vector<array<double,NF> > set_kV(const vector<double>& E){
 //====================//
 // VACUUM HAMILTONIAN //
 //====================//
-array<vector<MATRIX<complex<double>,NF,NF> >,NM>
-  Evaluate_HfV(const vector<array<double,NF> >& kV,
-	       const vector<MATRIX<complex<double>,NF,NF> >& UV){
+array<array<MATRIX<complex<double>,NF,NF>,NE>,NM>
+  Evaluate_HfV(const array<array<double,NF>,NE>& kV,
+	       const array<MATRIX<complex<double>,NF,NF>,NM>& UV){
 
-  array<vector<MATRIX<complex<double>,NF,NF> >,NM> HfV;
-  HfV[matter]     = vector<MATRIX<complex<double>,NF,NF> >(NE);
-  HfV[antimatter] = vector<MATRIX<complex<double>,NF,NF> >(NE);
+  array<array<MATRIX<complex<double>,NF,NF>,NE>,NM> HfV;
   MATRIX<complex<double>,NF,NF> KV;
   
   for(int i=0;i<=NE-1;i++){
@@ -168,8 +166,8 @@ array<MATRIX<complex<double>,NF,NF>,NF>
 // Evaluate_UV //
 //=============//
 // vaccum mixing matrices
-vector<MATRIX<complex<double>,NF,NF> > Evaluate_UV(void){
-  vector<MATRIX<complex<double>,NF,NF> > UV(NM);
+array<MATRIX<complex<double>,NF,NF>,NM> Evaluate_UV(void){
+  array<MATRIX<complex<double>,NF,NF>,NM> UV;
   UV[matter][0][0] = c12V * exp(-I*alphaV[0]                  );
   UV[matter][0][1] = s12V * exp(-I*alphaV[1]                  );
   UV[matter][1][0] =-s12V * exp( I* betaV[0])*exp(-I*alphaV[0]);
@@ -183,10 +181,10 @@ vector<MATRIX<complex<double>,NF,NF> > Evaluate_UV(void){
 // Evaluate_CV //
 //=============//
 // cofactor matrices in vacuum
-vector<array<MATRIX<complex<double>,NF,NF>,NF> >
-  Evaluate_CV(const vector<array<double,NF> >& kV,
-	      const array<vector<MATRIX<complex<double>,NF,NF> >,NM>& HfV){
-  vector<array<MATRIX<complex<double>,NF,NF>,NF> > CV(NE);
+array<array<MATRIX<complex<double>,NF,NF>,NF>,NE>
+  Evaluate_CV(const array<array<double,NF>,NE>& kV,
+	      const array<array<MATRIX<complex<double>,NF,NF>,NE>,NM>& HfV){
+  array<array<MATRIX<complex<double>,NF,NF>,NF>,NE> CV;
   for(int i=0;i<=NE-1;i++){
     CV[i][0][e][mu]=C<e,mu>(HfV[matter][i],kV[i][0]); CV[i][1][e][mu]=C<e,mu>(HfV[matter][i],kV[i][1]);
     CV[i][0][mu][e]=C<mu,e>(HfV[matter][i],kV[i][0]); CV[i][1][mu][e]=C<mu,e>(HfV[matter][i],kV[i][1]);
@@ -198,12 +196,12 @@ vector<array<MATRIX<complex<double>,NF,NF>,NF> >
 // Evaluate_AV //
 //=============//
 // mixing matrix element prefactors in vacuum
-vector<array<array<double,NF>,NF> >
-  Evaluate_AV(const vector<array<double,NF> >& kV,
-	      const array<vector<MATRIX<complex<double>,NF,NF> >,NM>& HfV,
-	      const vector<MATRIX<complex<double>,NF,NF> >& UV){
+array<array<array<double,NF>,NF>,NE>
+  Evaluate_AV(const array<array<double,NF>,NE>& kV,
+	      const array<array<MATRIX<complex<double>,NF,NF>,NE>,NM>& HfV,
+	      const array<MATRIX<complex<double>,NF,NF>,NM>& UV){
 
-  vector<array<array<double,NF>,NF> > AV(NE);
+  array<array<array<double,NF>,NF>,NE> AV;
   
   double Delta;
   for(int i=0;i<=NE-1;i++){

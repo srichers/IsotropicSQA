@@ -140,13 +140,13 @@ class EAS{
   int ns, ng, nv;
   double munue = 0./0.; /*erg*/
   double temperature = 0./0.; /*MeV*/
-  vector<double> E; // erg
-  vector<double> nu, dnu; // Hz
-  vector<double> eas;
-  vector<double> escat_kernel0; // out-scattering
-  vector<double> escat_kernel1;
-  vector<double> pair_kernel0; // neutrino pair annihilation
-  vector<double> pair_kernel1;
+  array<double,NE> E; // erg
+  array<double,NE> nu, dnu; // Hz
+  array<double,NE> eas;
+  array<double,NE*NE*NM*NF> escat_kernel0; // out-scattering
+  array<double,NE*NE*NM*NF> escat_kernel1;
+  array<double,NE*NE*NM*NF> pair_kernel0; // neutrino pair annihilation
+  array<double,NE*NE*NM*NF> pair_kernel1;
 
   EAS(){}
   EAS(const string filename, const string eosfilename){
@@ -170,20 +170,9 @@ class EAS{
     ng = __nulibtable_MOD_nulibtable_number_groups;
     nv = __nulibtable_MOD_nulibtable_number_easvariables;
     assert(NE==ng);
-    eas.resize(ns*ng*nv);
-    if(do_iscat){
-      escat_kernel0.resize(ns*ng*ng);
-      escat_kernel1.resize(ns*ng*ng);
-    }
-    if(do_pair){
-      pair_kernel0.resize(ns*ng*ng);
-      pair_kernel1.resize(ns*ng*ng);
-    }
+    assert(NM*NF == ns);
     
     // set energy grid
-    E.resize(ng);
-    nu.resize(ng);
-    dnu.resize(ng);
     cout << endl;
     cout<<"NE="<<ng << endl;
     for(int i=0;i<ng;i++){

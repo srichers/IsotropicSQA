@@ -40,16 +40,16 @@ class State{
   ofstream foutf;
 
   // temporaries
-  vector<array<double,NF> > kV;
-  vector<MATRIX<complex<double>,NF,NF> > UV;
-  array<vector<MATRIX<complex<double>,NF,NF> >,NM> HfV;
-  vector<array<MATRIX<complex<double>,NF,NF>,NF> > CV;
-  vector<array<array<double,NF>,NF> > AV;
-  array<vector<MATRIX<complex<double>,NF,NF> >,NM> U0; // mixing angles to MSW basis at initial point
+  array<array<double,NF>,NE> kV;
+  array<MATRIX<complex<double>,NF,NF>,NM> UV;
+  array<array<MATRIX<complex<double>,NF,NF>,NE>,NM> HfV;
+  array<array<MATRIX<complex<double>,NF,NF>,NF>,NE> CV;
+  array<array<array<double,NF>,NF>,NE> AV;
+  array<array<MATRIX<complex<double>,NF,NF>,NE>,NM> U0; // mixing angles to MSW basis at initial point
   array<MATRIX<complex<double>,NF,NF>,NM> VfMSW;
-  array<vector< array<double,NF> >,NM> k0;
-  array<vector<MATRIX<complex<double>,NF,NF> >,NM> UWBW;
-  array<vector<array<MATRIX<complex<double>,NF,NF>,NS> >,NM> Sa;
+  array<array< array<double,NF>,NE>,NM> k0;
+  array<array<MATRIX<complex<double>,NF,NF>,NE>,NM> UWBW;
+  array<array<array<MATRIX<complex<double>,NF,NF>,NS>,NE>,NM> Sa;
 
   
   State(string nulibfilename, string eosfilename, double rho_in, double Ye_in, double T_in, double dr0, double mixing, bool do_interact){
@@ -80,11 +80,6 @@ class State{
     
     // other matrices
     for(int m=matter; m<=antimatter; m++){
-      U0[m] = vector<MATRIX<complex<double>,NF,NF> >(eas.ng);
-      k0[m] = vector<array<double,NF> >(eas.ng);
-      UWBW[m] = vector<MATRIX<complex<double>,NF,NF> >(eas.ng);
-      Sa[m] = vector<array<MATRIX<complex<double>,NF,NF>,NS> >(eas.ng);
-      
       for(int i=0;i<=eas.ng-1;i++){
 	MATRIX<complex<double>,NF,NF> Hf0=HfV[m][i]+ VfMSW[m];
 	k0[m][i] = (m==matter? k(Hf0) : kbar(Hf0) );
