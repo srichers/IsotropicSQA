@@ -3,16 +3,15 @@ void evolve_oscillations(State& s, const double rmax, const double accuracy, con
   //********************
   // evolved variables *
   //********************
-  vector<vector<vector<vector<double> > > > 
-    Y(NM,vector<vector<vector<double> > >(s.eas.ng,vector<vector<double> >(NS,vector<double>(NY))));
+  array<array<vector<vector<double> >,NE>,NM> Y;
   for(state m=matter;m<=antimatter;m++)
     for(int i=0;i<=s.eas.ng-1;i++)
       Y[m][i] = YIdentity;
     
   // temporaries
   array<array<MATRIX<complex<double>,NF,NF>,NE>,NM> SSMSW, SSSI, pmatrixm0;
-  vector<vector<vector<vector<double> > > >  Ytmp(Y);
-  vector<vector<vector<vector<vector<double> > > > > Ks(NRK);
+  array<array<vector<vector<double> >,NE>,NM>  Ytmp(Y);
+  vector<array<array<vector<vector<double> >,NE>,NM> > Ks(NRK);
   for(int j=0; j<NRK; j++) Ks[j] = Y;
   
   bool finish=false;

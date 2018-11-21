@@ -171,8 +171,8 @@ MATRIX<complex<double>,NF,NF> W(const vector<double>& Y){
 void K(const double dr,
        State& s,
        const array<array<MATRIX<complex<double>,NF,NF>,NE>,NM>& pmatrixm0,
-       const vector<vector<vector<vector<double> > > > &Y,
-       vector<vector<vector<vector<double> > > > &K){
+       const array<array<vector<vector<double> >,NE>,NM> &Y,
+       array<array<vector<vector<double> >,NE>,NM> &K){
 
   array<MATRIX<complex<double>,NF,NF>,NM> VfSI;  // self-interaction potential
 
