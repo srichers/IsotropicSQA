@@ -5,7 +5,7 @@ void evolve_oscillations(State& s, const double rmax, const double accuracy, con
   //********************
   array<array<vector<vector<double> >,NE>,NM> Y;
   for(state m=matter;m<=antimatter;m++)
-    for(int i=0;i<=s.eas.ng-1;i++)
+    for(int i=0;i<NE;i++)
       Y[m][i] = YIdentity;
     
   // temporaries
@@ -36,7 +36,7 @@ void evolve_oscillations(State& s, const double rmax, const double accuracy, con
 	Ytmp=Y;
 	for(int l=0;l<=k-1;l++)
 	  for(int m=0; m<=1; m++) // 0=matter 1=antimatter
-	    for(int i=0;i<=s.eas.ng-1;i++)
+	    for(int i=0;i<NE;i++)
 	      for(int x=0;x<=1;x++) // 0=msw 1=si
 		for(int j=0;j<=NY-1;j++)
 		  Ytmp[m][i][x][j] += BB[k][l] * Ks[l][m][i][x][j];
@@ -49,7 +49,7 @@ void evolve_oscillations(State& s, const double rmax, const double accuracy, con
       double maxerror=0.;
       #pragma omp parallel for collapse(2) reduction(max:maxerror)
       for(int m=matter; m<=antimatter; m++){
-	for(int i=0;i<=s.eas.ng-1;i++){
+	for(int i=0;i<NE;i++){
 	  for(int x=msw; x<=si; x++){
 	    for(int j=0;j<=NY-1;j++){
 	      double Yerror = 0.;
@@ -87,7 +87,7 @@ void evolve_oscillations(State& s, const double rmax, const double accuracy, con
     //========================//
 #pragma omp parallel for collapse(2)
     for(int m=matter;m<=antimatter;m++){
-      for(int i=0;i<=s.eas.ng-1;i++){
+      for(int i=0;i<NE;i++){
 	
 	// get oscillated f
 	SSMSW[m][i] = W(Y[m][i][msw])*B(Y[m][i][msw]);
@@ -150,7 +150,7 @@ void evolve_interactions(State& s, const double rmax, const double accuracy, con
 	ftmp=s.fmatrixf;
 	for(int l=0;l<=k-1;l++)
 	  for(int m=0; m<=1; m++) // 0=matter 1=antimatter
-	    for(int i=0;i<=s.eas.ng-1;i++)
+	    for(int i=0;i<NE;i++)
 	      ftmp[m][i] += dfdr[l][m][i] * BB[k][l] * dr;
 	
 	dfdr[k] = my_interact(ftmp, s.rho, s.T, s.Ye, s.eas);
@@ -161,7 +161,7 @@ void evolve_interactions(State& s, const double rmax, const double accuracy, con
       ftmp = s.fmatrixf;
       #pragma omp parallel for collapse(2) reduction(max:maxerror)
       for(int m=matter; m<=antimatter; m++){
-	for(int i=0;i<=s.eas.ng-1;i++){
+	for(int i=0;i<NE;i++){
 	  MATRIX<complex<double>,NF,NF> err, df;
 	  for(int k=0;k<=NRK-1;k++){
 	    df += dfdr[k][m][i] * CC[k] * dr;

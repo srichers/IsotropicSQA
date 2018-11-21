@@ -78,7 +78,7 @@ class State{
     
     // other matrices
     for(int m=matter; m<=antimatter; m++){
-      for(int i=0;i<=eas.ng-1;i++){
+      for(int i=0;i<NE;i++){
 	MATRIX<complex<double>,NF,NF> Hf0=HfV[m][i]+ VfMSW[m];
 	k0[m][i] = (m==matter? k(Hf0) : kbar(Hf0) );
 	array<double,1> deltak0 = (m==matter ? deltak(Hf0) : deltakbar(Hf0) );
