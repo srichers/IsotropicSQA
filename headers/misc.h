@@ -105,8 +105,6 @@ class State{
 };
 
 void getP(const State& s, vector<vector<MATRIX<complex<double>,NF,NF> > >& pmatrixm0){
-  const int NE = s.eas.ng;
-
   #pragma omp parallel for collapse(2)
   for(int m=matter; m<=antimatter; m++){
     for(int i=0; i<NE; i++){
@@ -183,7 +181,6 @@ void K(const double dr,
        const vector<vector<vector<vector<double> > > > &Y,
        vector<vector<vector<vector<double> > > > &K){
 
-  const int NE = pmatrixm0[0].size();
   array<MATRIX<complex<double>,NF,NF>,NM> VfSI;  // self-interaction potential
 
 #pragma omp parallel
@@ -253,8 +250,6 @@ void K(const double dr,
 // Outputvsr //
 //===========//
 void Outputvsr(State& s, const double impact){
-  const int NE = s.eas.ng;
-
   // output to stdout
   double n=0, nbar=0;
   double coeff = 4.*M_PI / pow(cgs::constants::c,3);

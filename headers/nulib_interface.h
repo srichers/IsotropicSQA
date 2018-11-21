@@ -169,6 +169,7 @@ class EAS{
     ns = __nulibtable_MOD_nulibtable_number_species;
     ng = __nulibtable_MOD_nulibtable_number_groups;
     nv = __nulibtable_MOD_nulibtable_number_easvariables;
+    assert(NE==ng);
     eas.resize(ns*ng*nv);
     if(do_iscat){
       escat_kernel0.resize(ns*ng*ng);
