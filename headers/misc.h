@@ -183,7 +183,7 @@ void K(const double dr,
        vector<vector<vector<vector<double> > > > &K){
 
   const int NE = pmatrixm0[0].size();
-  MATRIX<complex<double>,NF,NF> VfSI,VfSIbar;  // self-interaction potential
+  array<MATRIX<complex<double>,NF,NF>,NM> VfSI;  // self-interaction potential
 
 #pragma omp parallel
   {
@@ -204,73 +204,44 @@ void K(const double dr,
       MATRIX<complex<double>,NF,NF> VfSIE = Sfm*pmatrixm0[m][i]*Adjoint(Sfm);
       if(m==antimatter) VfSIE = -Conjugate(VfSIE);
       #pragma omp critical
-      VfSI += VfSIE;
+      VfSI[matter] += VfSIE;
     }
   }
 
   #pragma omp single
-  VfSIbar=-Conjugate(VfSI);
+  VfSI[antimatter]=-Conjugate(VfSI[matter]);
 
   // *********************
   // SI part of solution *
   // *********************
-  #pragma omp for
-  for(int i=0; i<NE; i++){
-    MATRIX<double,3,4> JI;
-    MATRIX<complex<double>,NF,NF> Ha, HB;
-    double dvdr[4];
+  #pragma omp for collapse(2)
+  for(int m=matter; m<=antimatter; m++){
+    for(int i=0; i<NE; i++){
 
-    //*********
-    // Matter *
-    //*********    
-    Ha = Adjoint(s.UWBW[matter][i])*VfSI*s.UWBW[matter][i];
-  
-    K[matter][i][si][4]=dr*real(Ha[0][0])/(M_2PI*cgs::constants::hbarc);
-    K[matter][i][si][5]=dr*real(Ha[1][1])/(M_2PI*cgs::constants::hbarc);
-    
-    HB[0][0]=-I/cgs::constants::hbarc*( Ha[0][1]*s.Sa[matter][i][si][1][0] );
-    HB[0][1]=-I/cgs::constants::hbarc*( Ha[0][1]*s.Sa[matter][i][si][1][1] );
-    
-    dvdr[0]=real(HB[0][1]);
-    dvdr[1]=imag(HB[0][1]);
-    dvdr[2]=real(HB[0][0]);
-    dvdr[3]=imag(HB[0][0]);
-    
-    JI=JInverse(Y[matter][i][si]);
-    
-    for(int j=0;j<=2;j++){
-      K[matter][i][si][j]=0.;
-      for(int k=j;k<=3;k++) K[matter][i][si][j]+=JI[j][k]*dvdr[k];
-      K[matter][i][si][j]*=dr;
+      MATRIX<complex<double>,NF,NF> Ha = Adjoint(s.UWBW[m][i]) * VfSI[m] * s.UWBW[m][i];
+
+      K[m][i][si][4]=dr*real(Ha[0][0])/(M_2PI*cgs::constants::hbarc);
+      K[m][i][si][5]=dr*real(Ha[1][1])/(M_2PI*cgs::constants::hbarc);
+
+      complex<double> HB0 =-I/cgs::constants::hbarc*( Ha[0][1]*s.Sa[m][i][si][1][0] );
+      complex<double> HB1 =-I/cgs::constants::hbarc*( Ha[0][1]*s.Sa[m][i][si][1][1] );
+
+      double dvdr[4];
+      dvdr[0]=real(HB1);
+      dvdr[1]=imag(HB1);
+      dvdr[2]=real(HB0);
+      dvdr[3]=imag(HB0);
+
+      MATRIX<double,3,4> JI = JInverse(Y[m][i][si]);
+
+      for(int j=0;j<=2;j++){
+	K[m][i][si][j]=0.;
+	for(int k=j;k<=3;k++) K[m][i][si][j]+=JI[j][k]*dvdr[k];
+	K[m][i][si][j]*=dr;
+      }
+
+      K[m][i][si][3]=0.;
     }
-    
-    K[matter][i][si][3]=0.;
-    
-    //*************
-    // Antimatter *
-    //*************
-    Ha=Adjoint(s.UWBW[antimatter][i])*VfSIbar*s.UWBW[antimatter][i];
-
-    K[antimatter][i][si][4]=dr*real(Ha[0][0])/(M_2PI*cgs::constants::hbarc);
-    K[antimatter][i][si][5]=dr*real(Ha[1][1])/(M_2PI*cgs::constants::hbarc);
-
-    HB[0][0]=-I/cgs::constants::hbarc*( Ha[0][1]*s.Sa[antimatter][i][si][1][0] );
-    HB[0][1]=-I/cgs::constants::hbarc*( Ha[0][1]*s.Sa[antimatter][i][si][1][1] );
-
-    dvdr[0]=real(HB[0][1]);
-    dvdr[1]=imag(HB[0][1]);
-    dvdr[2]=real(HB[0][0]);
-    dvdr[3]=imag(HB[0][0]);
-
-    JI = JInverse(Y[antimatter][i][si]);
-
-    for(int j=0;j<=2;j++){
-      K[antimatter][i][si][j]=0.;
-      for(int k=j;k<=3;k++) K[antimatter][i][si][j]+=JI[j][k]*dvdr[k];
-      K[antimatter][i][si][j]*=dr;
-    }
-
-    K[antimatter][i][si][3]=0.;
   }
   }// omp parallel block
 
