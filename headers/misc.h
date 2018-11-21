@@ -40,7 +40,7 @@ class State{
   ofstream foutf;
 
   // temporaries
-  vector<vector<double> > kV;
+  vector<array<double,NF> > kV;
   vector<MATRIX<complex<double>,NF,NF> > UV;
   vector<vector<MATRIX<complex<double>,NF,NF> > > HfV,CV;
   vector<array<array<double,NF>,NF> > AV;
