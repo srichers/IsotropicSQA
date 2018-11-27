@@ -123,17 +123,15 @@ int main(int argc, char *argv[]){
   // ***********************
   bool finish=false;
   do{
-    if(s.r+s.dr_block>=rmax){
+    double impact=0;
+    double rstep = s.r + s.dr_block * min(5., exponential_random());
+    double r0 = s.r;
+    if(rstep>=rmax){
       finish=true;
-      s.dr_block = rmax-s.r;
+      s.dr_block = rmax-r0;
     }
     else finish=false;
-    
-    double impact=0;
-    double rstep = s.r + s.dr_block;
-    if(10.*s.dr_osc<s.dr_block) // anti-aliasing
-      rstep += (.5-uniform()) * 10.*s.dr_osc;
-    double r0 = s.r;
+
     if(do_oscillate)
       evolve_oscillations(s, rstep, accuracy, increase, step_output);
     if(do_interact){
@@ -161,13 +159,13 @@ int main(int argc, char *argv[]){
 
     // timestepping
     if(do_interact){
-      if(impact > 10*target_impact)
+      if(impact > target_impact)
 	cout << "WARNING: impact="<<impact<< endl;
       double corrected_impact = impact / (s.r-r0) * s.dr_block;
-      if(corrected_impact<target_impact/2.)
-	s.dr_block *= min(increase, target_impact/2./corrected_impact);
-      if(corrected_impact>target_impact*2.)
-	s.dr_block *= target_impact*2./corrected_impact;
+      if(corrected_impact<.1*target_impact)
+	s.dr_block *= min(increase, .1*target_impact/corrected_impact);
+      if(corrected_impact>.1*target_impact)
+	s.dr_block *= .1*target_impact/corrected_impact;
     }
 
     // sanity checks
