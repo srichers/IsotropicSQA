@@ -140,7 +140,6 @@ int main(int argc, char *argv[]){
       evolve_interactions(s, rstep, accuracy, increase);
 
       // evaluate the net impact
-      impact = 0;
       for(int m=matter; m<=antimatter; m++){
 	for(int i=0;i<=s.eas.ng-1;i++){
 	  double l = IsospinL(fmatrixf0[m][i]);
@@ -152,21 +151,21 @@ int main(int argc, char *argv[]){
 	  } // f1
 	} // i
       } // m
-
-      // timestepping
-      s.r = rstep;
-      if(impact > 10*target_impact)
-      	cout << "WARNING: impact="<<impact<< endl;
-      if(impact<target_impact/2.)
-      	s.dr_block *= min(increase, target_impact/2./impact);
-      if(impact>target_impact*2.)
-      	s.dr_block *= target_impact*2./impact;
-      
-      // output
-      Outputvsr(s, impact);
     }
-    
-    
+
+    // output
+    Outputvsr(s, impact);
+
+    // timestepping
+    if(do_interact){
+      if(impact > 10*target_impact)
+	cout << "WARNING: impact="<<impact<< endl;
+      if(impact<target_impact/2.)
+	s.dr_block *= min(increase, target_impact/2./impact);
+      if(impact>target_impact*2.)
+	s.dr_block *= target_impact*2./impact;
+    }
+
     // sanity checks
     for(int m=matter;m<=antimatter;m++){
       for(int i=0;i<=s.eas.ng-1;i++){
