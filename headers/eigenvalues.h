@@ -80,8 +80,6 @@ inline double asymptotick2bar(const double Hee,const double Hmm,const double x,c
 // k //
 //===//
 array<double,NF> k(const MATRIX<complex<double>,NF,NF>& Hf){
-  //if(4.*norm(Hf[e][mu])/norm(Hf[e][e]-Hf[mu][mu])<0.0745){ return asymptotick(Hf);}
-
   array<double,NF> k;
   double t=real(Trace(Hf)), sqrtd=sqrt(D(Hf));
   
@@ -101,8 +99,6 @@ array<double,NF> k(const double t,const double sqrtd){
 // kbar //
 //======//
 array<double,NF> kbar(const MATRIX<complex<double>,NF,NF>& Hf){
-  //if(4.*norm(Hf[e][mu])/norm(Hf[e][e]-Hf[mu][mu])<0.0745){ return asymptotickbar(Hf);}
-  
   array<double,NF> k;
   double tbar=real(Trace(Hf)), sqrtdbar=sqrt(D(Hf));
   

@@ -167,14 +167,9 @@ void evolve_interactions(State& s, const double rmax, const double accuracy, con
 	  }
 	  ftmp[m][i] += df;
 	  
-	  double trace = norm(Trace(s.fmatrixf[m][i]));
-	  if(trace<=0){
-	    cout << i << " " << m << " " << trace << endl;
-	    exit(1);
-	  }
 	  for(flavour f1=e; f1<=mu; f1++){
 	    for(flavour f2=e; f2<=mu; f2++){
-	      maxerror = max(maxerror, norm(err[f1][f2])/norm(s.fmatrixf[m][i][f1][f2]));//IsospinL(s.fmatrixf[m][i]));
+	      maxerror = max(maxerror, abs(err[f1][f2])/abs(s.fmatrixf[m][i][f1][f2]));//IsospinL(s.fmatrixf[m][i]));
 	    }
 	  }
 	} // i

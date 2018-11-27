@@ -131,6 +131,8 @@ int main(int argc, char *argv[]){
     
     double impact=0;
     double rstep = s.r + s.dr_block;
+    if(10.*s.dr_osc<s.dr_block) // anti-aliasing
+      rstep += (.5-uniform()) * 10.*s.dr_osc;
     double r0 = s.r;
     if(do_oscillate)
       evolve_oscillations(s, rstep, accuracy, increase, step_output);
@@ -140,13 +142,14 @@ int main(int argc, char *argv[]){
       evolve_interactions(s, rstep, accuracy, increase);
 
       // evaluate the net impact
+      #pragma omp parallel for collapse(2) reduction(max:impact)
       for(int m=matter; m<=antimatter; m++){
 	for(int i=0;i<=s.eas.ng-1;i++){
 	  double l = IsospinL(fmatrixf0[m][i]);
 	  MATRIX<complex<double>,NF,NF> df = s.fmatrixf[m][i] - fmatrixf0[m][i];
 	  for(flavour f1=e; f1<=mu; f1++){
 	    for(flavour f2=e; f2<=mu; f2++){
-	      impact = max(impact, norm(df[f1][f2]) / l);
+	      impact = max(impact, abs(df[f1][f2]) / l);
 	    } // f2
 	  } // f1
 	} // i
@@ -160,10 +163,11 @@ int main(int argc, char *argv[]){
     if(do_interact){
       if(impact > 10*target_impact)
 	cout << "WARNING: impact="<<impact<< endl;
-      if(impact<target_impact/2.)
-	s.dr_block *= min(increase, target_impact/2./impact);
-      if(impact>target_impact*2.)
-	s.dr_block *= target_impact*2./impact;
+      double corrected_impact = impact / (s.r-r0) * s.dr_block;
+      if(corrected_impact<target_impact/2.)
+	s.dr_block *= min(increase, target_impact/2./corrected_impact);
+      if(corrected_impact>target_impact*2.)
+	s.dr_block *= target_impact*2./corrected_impact;
     }
 
     // sanity checks
