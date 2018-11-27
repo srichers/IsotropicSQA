@@ -358,3 +358,11 @@ void unitarize(MATRIX<complex<double>,2,2>& M, const double accuracy){
   assert( abs( real(identity[e ][mu]*conj(identity[e ][mu]))     ) < accuracy);
   assert( abs( real(identity[mu][e ]*conj(identity[mu][e ]))     ) < accuracy);
 }
+
+double uniform(){
+  return (float)rand() / (float)RAND_MAX;
+}
+double exponential_random(){
+  return -log10(uniform());
+}
+
