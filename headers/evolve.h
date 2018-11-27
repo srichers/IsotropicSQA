@@ -118,7 +118,6 @@ void evolve_oscillations(State& s, const double rmax, const double accuracy, con
     if(step_output>0 and (s.counter>=next_output or finish)){
       Outputvsr(s, 0);
       next_output = step_output>0 ? s.counter + rand()%step_output + 1 : -1;
-      cout << next_output << endl;
     }
     
   } while(finish==false);
