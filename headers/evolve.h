@@ -1,4 +1,4 @@
-void evolve_oscillations(State& s, const double rmax, const double accuracy, const double increase, const int step_output){
+void evolve_oscillations(State& s, const double rmax, const double accuracy, const double increase){
     
   //********************
   // evolved variables *
@@ -14,10 +14,8 @@ void evolve_oscillations(State& s, const double rmax, const double accuracy, con
   array<array<array<array<array<double,NY>,NS>,NE>,NM>,NRK> Ks;
   
   bool finish=false;
-  int next_output = step_output>0 ? rand()%step_output+1 : -1;
   
   do{ // loop over radii
-    s.counter++;
     getP(s,pmatrixm0);
     
     double dr = s.dr_osc;
@@ -112,14 +110,6 @@ void evolve_oscillations(State& s, const double rmax, const double accuracy, con
       }
     }
 
-    //========//
-    // OUTPUT //
-    //========//
-    if(step_output>0 and (s.counter>=next_output or finish)){
-      Outputvsr(s, 0);
-      next_output = step_output>0 ? s.counter + rand()%step_output + 1 : -1;
-    }
-    
   } while(finish==false);
 }
 
@@ -130,7 +120,6 @@ void evolve_interactions(State& s, const double rmax, const double accuracy, con
   array<array<array<MATRIX<complex<double>,NF,NF>,NE>,NM>,NRK> dfdr;
 
   bool finish=false;
-  s.counter++;
   do{ // loop over radii
     
     double dr = s.dr_int;

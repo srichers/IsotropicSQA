@@ -56,6 +56,7 @@ using std::vector;
 #include<array>
 using std::array;
 #include<ctime>
+#include<hdf5.h>
 
 // headers
 #include "headers/matrix.h"
@@ -78,6 +79,7 @@ int main(int argc, char *argv[]){
   // read in all parameters
   const string nulibfilename = get_parameter<string>(fin,"nulibfilename");
   const string eosfilename = get_parameter<string>(fin,"eosfilename");
+  const string outputfilename = get_parameter<string>(fin,"outputfilename");
   const double rho = get_parameter<double>(fin,"rho");
   const double Ye  = get_parameter<double>(fin,"Ye");
   const double temperature = get_parameter<double>(fin,"temperature"); // MeV
@@ -94,34 +96,31 @@ int main(int argc, char *argv[]){
 
   // initialize the state
   State s(nulibfilename, eosfilename, rho, Ye, temperature, dr0, mixing, do_interact);
-
+  ifstream tmp_ifstream(outputfilename);
+  hid_t output_file;
+  if(tmp_ifstream){
+    cout << "Recovering from " << outputfilename << endl;
+    output_file = recover(outputfilename, s);
+  }
+  else if(step_output>0) {
+    cout << "Starting new file " << outputfilename << endl;
+    output_file = setup_file(outputfilename);
+    write_data(output_file, s, 0);
+  }
+  
   // random number generator - prevent aliasing in interactions and output
   srand(time(NULL));
 
   // temporary variable
   array<array<MATRIX<complex<double>,NF,NF>,NE>,NM> fmatrixf0 = s.fmatrixf;
   
-  // set up output file
-  s.foutf.open("f.dat");
-  s.foutf.precision(12);
-  s.foutf << "# 1:r ";
-  for(int i=0; i<s.eas.ng; i++)
-    for(state m=matter; m<=antimatter; m++)
-      for(flavour f1=e; f1<=mu; f1++)
-	for(flavour f2=e; f2<=mu; f2++) {
-	  int istart = 2*( f2 + f1*2 + m*2*2 + i*2*2*2) + 2;
-	  s.foutf << istart   << ":ie"<<i<<"m"<<m<<"f"<<f1<<f2<<"R\t";
-	  s.foutf << istart+1 << ":ie"<<i<<"m"<<m<<"f"<<f1<<f2<<"I\t";
-	}
-  s.foutf << endl;
-  s.foutf.flush();
   cout << "iter \t t(s) \t dt(s) \t n_nu(1/ccm) \t n_nubar(1/ccm) \t n_nu-n_nubar(1/ccm) \t interact_impact" << endl;
-  Outputvsr(s, 0);
 
   // ***********************
   // start the loop over r *
   // ***********************
   bool finish=false;
+  int next_output = step_output>0 ? rand()%step_output+1 : -1;
   do{
     double impact=0;
     double rstep = s.r + s.dr_block * min(5., exponential_random());
@@ -133,7 +132,7 @@ int main(int argc, char *argv[]){
     else finish=false;
 
     if(do_oscillate)
-      evolve_oscillations(s, rstep, accuracy, increase, step_output);
+      evolve_oscillations(s, rstep, accuracy, increase);
     if(do_interact){
       s.r = r0;
       fmatrixf0 = s.fmatrixf;
@@ -155,7 +154,11 @@ int main(int argc, char *argv[]){
     }
 
     // output
-    Outputvsr(s, impact);
+    s.counter++;
+    if(step_output>0 and (s.counter>=next_output or finish)){
+      write_data(output_file, s, impact);
+      next_output = step_output>0 ? s.counter + rand()%step_output + 1 : -1;
+    }
 
     // timestepping
     if(do_interact){

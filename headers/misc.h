@@ -37,7 +37,6 @@ class State{
   int counter;
   EAS eas;
   array<array<MATRIX<complex<double>,NF,NF>,NE>,NM> fmatrixf;
-  ofstream foutf;
 
   // temporaries
   array<array<double,NF>,NE> kV;
@@ -239,10 +238,44 @@ void K(const double dr,
 }// end of K function
 
 
-//===========//
-// Outputvsr //
-//===========//
-void Outputvsr(State& s, const double impact){
+//============//
+// setup_file //
+//============//
+hid_t setup_file(string filename){
+  hid_t file = H5Fcreate(filename.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+  hid_t file_space;
+  hsize_t ndims;
+  hsize_t dims[6] = {0, NM, NE, NF, NF, 2};
+  hid_t plist = H5Pcreate(H5P_DATASET_CREATE);
+  H5Pset_layout(plist, H5D_CHUNKED);
+
+  // FMATRIXF //
+  ndims = 6;
+  file_space = H5Screate_simple(ndims, dims, max_dims);
+  H5Pset_chunk(plist, ndims, chunk_dims);
+  H5Dcreate(file, "fmatrixf", H5T_NATIVE_DOUBLE, file_space, H5P_DEFAULT, plist, H5P_DEFAULT);
+
+  // RADIUS/TIME //
+  ndims = 1;
+  file_space = H5Screate_simple(ndims, dims, max_dims);
+  H5Pset_chunk(plist, ndims, chunk_dims);
+  H5Dcreate(file, "r(cm)", H5T_NATIVE_DOUBLE, file_space, H5P_DEFAULT, plist, H5P_DEFAULT);
+  H5Dcreate(file, "dr_block(cm)", H5T_NATIVE_DOUBLE, file_space, H5P_DEFAULT, plist, H5P_DEFAULT);
+  H5Dcreate(file, "dr_osc(cm)", H5T_NATIVE_DOUBLE, file_space, H5P_DEFAULT, plist, H5P_DEFAULT);
+  H5Dcreate(file, "dr_int(cm)", H5T_NATIVE_DOUBLE, file_space, H5P_DEFAULT, plist, H5P_DEFAULT);
+
+  // clear resources
+  H5Sclose(file_space);
+  H5Pclose(plist);
+  H5Fflush(file,H5F_SCOPE_GLOBAL);
+  
+  return file;
+}
+
+//============//
+// write_data //
+//============//
+void write_data(const hid_t file, const State& s, const double impact){
   // output to stdout
   double n=0, nbar=0;
   double coeff = 4.*M_PI / pow(cgs::constants::c,3);
@@ -261,19 +294,127 @@ void Outputvsr(State& s, const double impact){
   cout << n << "\t" << nbar << "\t" << (n-nbar) << "\t";
   cout << impact << endl;
   cout.flush();
+
+
   
-  // output to file
-  s.foutf << s.r << "\t";
-  for(int i=0; i<NE; i++)
-    for(state m=matter; m<=antimatter; m++)
-      for(flavour f1=e; f1<=mu; f1++)
-	for(flavour f2=e; f2<=mu; f2++) {
-	  s.foutf << real( s.fmatrixf[m][i][f1][f2] ) << "\t";
-	  s.foutf << imag( s.fmatrixf[m][i][f1][f2] ) << "\t";
-	}
-  s.foutf << endl;
-  s.foutf.flush();
+  // output to file //
+
+  hid_t dset, mem_space, file_space;
+  hsize_t ndims;
+
+  // create the memory space
+  dset = H5Dopen(file, "fmatrixf", H5P_DEFAULT);
+  ndims = 6;
+  mem_space = H5Screate_simple(ndims, chunk_dims, NULL);
+  file_space = H5Dget_space (dset);
+  hsize_t dims[ndims];
+  H5Sget_simple_extent_dims(file_space, dims, NULL);
+  dims[0]++;
+  hsize_t start[ndims] = {dims[0]-1, 0, 0, 0, 0, 0};
+
+  // fmatrixf
+  H5Dset_extent(dset, dims);
+  file_space = H5Dget_space(dset);
+  H5Sselect_hyperslab(file_space, H5S_SELECT_SET, start, NULL, chunk_dims, NULL);
+  H5Dwrite(dset, H5T_NATIVE_DOUBLE, mem_space, file_space, H5P_DEFAULT, &s.fmatrixf);
+
+  // 1D stuff
+  ndims = 1;
+  mem_space = H5Screate_simple(ndims, chunk_dims, NULL);
+  
+  // r
+  dset = H5Dopen(file, "r(cm)", H5P_DEFAULT);
+  H5Dset_extent(dset, dims);
+  file_space = H5Dget_space(dset);
+  H5Sselect_hyperslab(file_space, H5S_SELECT_SET, start, NULL, chunk_dims, NULL);
+  H5Dwrite(dset, H5T_NATIVE_DOUBLE, mem_space, file_space, H5P_DEFAULT, &s.r);
+
+  // dr_osc
+  dset = H5Dopen(file, "dr_osc(cm)", H5P_DEFAULT);
+  H5Dset_extent(dset, dims);
+  file_space = H5Dget_space(dset);
+  H5Sselect_hyperslab(file_space, H5S_SELECT_SET, start, NULL, chunk_dims, NULL);
+  H5Dwrite(dset, H5T_NATIVE_DOUBLE, mem_space, file_space, H5P_DEFAULT, &s.dr_osc);
+
+  // dr_osc
+  dset = H5Dopen(file, "dr_int(cm)", H5P_DEFAULT);
+  H5Dset_extent(dset, dims);
+  file_space = H5Dget_space(dset);
+  H5Sselect_hyperslab(file_space, H5S_SELECT_SET, start, NULL, chunk_dims, NULL);
+  H5Dwrite(dset, H5T_NATIVE_DOUBLE, mem_space, file_space, H5P_DEFAULT, &s.dr_int);
+
+  // dr_block
+  dset = H5Dopen(file, "dr_block(cm)", H5P_DEFAULT);
+  H5Dset_extent(dset, dims);
+  file_space = H5Dget_space(dset);
+  H5Sselect_hyperslab(file_space, H5S_SELECT_SET, start, NULL, chunk_dims, NULL);
+  H5Dwrite(dset, H5T_NATIVE_DOUBLE, mem_space, file_space, H5P_DEFAULT, &s.dr_block);
+
+  // free resources
+  H5Sclose(file_space);
+  H5Sclose(mem_space);
+  H5Dclose(dset);
+  H5Fflush(file,H5F_SCOPE_GLOBAL);
 }
+
+//=========//
+// recover //
+//=========//
+hid_t recover(const string filename, State& s){
+  hsize_t start[6] = {0, 0, 0, 0, 0, 0};
+  hsize_t dims[6];
+  hsize_t ndims;
+  hid_t file_space, mem_space, dset;
+
+  hid_t file = H5Fopen (filename.c_str(), H5F_ACC_RDWR, H5P_DEFAULT);
+
+  // fmatrixf
+  dset = H5Dopen (file, "fmatrixf", H5P_DEFAULT);
+  ndims=6;
+  mem_space = H5Screate_simple(ndims, chunk_dims, NULL);
+  file_space = H5Dget_space (dset);
+  H5Sget_simple_extent_dims(file_space, dims, NULL);
+  start[0] = dims[0]-1;
+  assert(dims[1]==NM);
+  assert(dims[2]==NE);
+  assert(dims[3]==NF);
+  assert(dims[4]==NF);
+  assert(dims[5]==2);
+  H5Sselect_hyperslab (file_space, H5S_SELECT_SET, start, NULL, chunk_dims, NULL);
+  H5Dread (dset, H5T_NATIVE_DOUBLE, mem_space, file_space, H5P_DEFAULT, &s.fmatrixf);
+
+  // 1D stuff
+  ndims=1;
+  mem_space = H5Screate_simple(ndims, chunk_dims, NULL);
+  
+  // r
+  dset = H5Dopen (file, "r(cm)", H5P_DEFAULT);
+  file_space = H5Dget_space (dset);
+  H5Sselect_hyperslab (file_space, H5S_SELECT_SET, start, NULL, chunk_dims, NULL);
+  H5Dread (dset, H5T_NATIVE_DOUBLE, mem_space, file_space, H5P_DEFAULT, &s.r);
+
+  // dr_osc
+  dset = H5Dopen (file, "dr_osc(cm)", H5P_DEFAULT);
+  H5Dread (dset, H5T_NATIVE_DOUBLE, mem_space, file_space, H5P_DEFAULT, &s.dr_osc);
+  
+  // dr_osc
+  dset = H5Dopen (file, "dr_int(cm)", H5P_DEFAULT);
+  H5Dread (dset, H5T_NATIVE_DOUBLE, mem_space, file_space, H5P_DEFAULT, &s.dr_int);
+  
+  // dr_osc
+  dset = H5Dopen (file, "dr_block(cm)", H5P_DEFAULT);
+  H5Dread (dset, H5T_NATIVE_DOUBLE, mem_space, file_space, H5P_DEFAULT, &s.dr_block);
+
+  s.counter = dims[0]-1;
+  
+  // clear resources
+  H5Sclose(file_space);
+  H5Sclose(mem_space);
+  H5Dclose(dset);
+
+  return file;
+}
+
 
 void Hermitize(MATRIX<complex<double>,2,2>& M, const double accuracy){
   double trace = real(M[e][e] + M[mu][mu]);
