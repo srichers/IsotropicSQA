@@ -123,11 +123,12 @@ int main(int argc, char *argv[]){
   int next_output = step_output>0 ? rand()%step_output+1 : -1;
   do{
     double impact=0;
-    double rstep = s.r + s.dr_block * min(5., exponential_random());
     double r0 = s.r;
+    double rstep = s.r + s.dr_block * min(5., exponential_random());
     if(rstep>=rmax){
       finish=true;
       s.dr_block = rmax-r0;
+      rstep = rmax;
     }
     else finish=false;
 
