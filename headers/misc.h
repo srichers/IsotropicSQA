@@ -94,6 +94,9 @@ class State{
       }
     }
   }
+
+  // IO temporaries
+  hid_t dset_f, dset_r, dset_dr_osc, dset_dr_int, dset_dr_block;
 };
 
 void getP(const State& s, array<array<MATRIX<complex<double>,NF,NF>,NE>,NM>& pmatrixm0){
@@ -267,7 +270,6 @@ hid_t setup_file(string filename){
   // clear resources
   H5Sclose(file_space);
   H5Pclose(plist);
-  H5Fflush(file,H5F_SCOPE_GLOBAL);
   
   return file;
 }
@@ -275,7 +277,7 @@ hid_t setup_file(string filename){
 //============//
 // write_data //
 //============//
-void write_data(const hid_t file, const State& s, const double impact){
+void write_data(const hid_t file, State& s, const double impact){
   // output to stdout
   double n=0, nbar=0;
   double coeff = 4.*M_PI / pow(cgs::constants::c,3);
@@ -299,62 +301,60 @@ void write_data(const hid_t file, const State& s, const double impact){
   
   // output to file //
 
-  hid_t dset, mem_space, file_space;
+  hid_t mem_space, file_space;
   hsize_t ndims;
 
   // create the memory space
-  dset = H5Dopen(file, "fmatrixf", H5P_DEFAULT);
+  s.dset_f = H5Dopen(file, "fmatrixf", H5P_DEFAULT);
   ndims = 6;
   mem_space = H5Screate_simple(ndims, chunk_dims, NULL);
-  file_space = H5Dget_space (dset);
+  file_space = H5Dget_space (s.dset_f);
   hsize_t dims[ndims];
   H5Sget_simple_extent_dims(file_space, dims, NULL);
   dims[0]++;
   hsize_t start[ndims] = {dims[0]-1, 0, 0, 0, 0, 0};
 
   // fmatrixf
-  H5Dset_extent(dset, dims);
-  file_space = H5Dget_space(dset);
+  H5Dset_extent(s.dset_f, dims);
+  file_space = H5Dget_space(s.dset_f);
   H5Sselect_hyperslab(file_space, H5S_SELECT_SET, start, NULL, chunk_dims, NULL);
-  H5Dwrite(dset, H5T_NATIVE_DOUBLE, mem_space, file_space, H5P_DEFAULT, &s.fmatrixf);
+  H5Dwrite(s.dset_f, H5T_NATIVE_DOUBLE, mem_space, file_space, H5P_DEFAULT, &s.fmatrixf);
 
   // 1D stuff
   ndims = 1;
   mem_space = H5Screate_simple(ndims, chunk_dims, NULL);
   
   // r
-  dset = H5Dopen(file, "r(cm)", H5P_DEFAULT);
-  H5Dset_extent(dset, dims);
-  file_space = H5Dget_space(dset);
+  s.dset_r = H5Dopen(file, "r(cm)", H5P_DEFAULT);
+  H5Dset_extent(s.dset_r, dims);
+  file_space = H5Dget_space(s.dset_r);
   H5Sselect_hyperslab(file_space, H5S_SELECT_SET, start, NULL, chunk_dims, NULL);
-  H5Dwrite(dset, H5T_NATIVE_DOUBLE, mem_space, file_space, H5P_DEFAULT, &s.r);
+  H5Dwrite(s.dset_r, H5T_NATIVE_DOUBLE, mem_space, file_space, H5P_DEFAULT, &s.r);
 
   // dr_osc
-  dset = H5Dopen(file, "dr_osc(cm)", H5P_DEFAULT);
-  H5Dset_extent(dset, dims);
-  file_space = H5Dget_space(dset);
+  s.dset_dr_osc = H5Dopen(file, "dr_osc(cm)", H5P_DEFAULT);
+  H5Dset_extent(s.dset_dr_osc, dims);
+  file_space = H5Dget_space(s.dset_dr_osc);
   H5Sselect_hyperslab(file_space, H5S_SELECT_SET, start, NULL, chunk_dims, NULL);
-  H5Dwrite(dset, H5T_NATIVE_DOUBLE, mem_space, file_space, H5P_DEFAULT, &s.dr_osc);
+  H5Dwrite(s.dset_dr_osc, H5T_NATIVE_DOUBLE, mem_space, file_space, H5P_DEFAULT, &s.dr_osc);
 
-  // dr_osc
-  dset = H5Dopen(file, "dr_int(cm)", H5P_DEFAULT);
-  H5Dset_extent(dset, dims);
-  file_space = H5Dget_space(dset);
+  // dr_int
+  s.dset_dr_int = H5Dopen(file, "dr_int(cm)", H5P_DEFAULT);
+  H5Dset_extent(s.dset_dr_int, dims);
+  file_space = H5Dget_space(s.dset_dr_int);
   H5Sselect_hyperslab(file_space, H5S_SELECT_SET, start, NULL, chunk_dims, NULL);
-  H5Dwrite(dset, H5T_NATIVE_DOUBLE, mem_space, file_space, H5P_DEFAULT, &s.dr_int);
+  H5Dwrite(s.dset_dr_int, H5T_NATIVE_DOUBLE, mem_space, file_space, H5P_DEFAULT, &s.dr_int);
 
   // dr_block
-  dset = H5Dopen(file, "dr_block(cm)", H5P_DEFAULT);
-  H5Dset_extent(dset, dims);
-  file_space = H5Dget_space(dset);
+  s.dset_dr_block = H5Dopen(file, "dr_block(cm)", H5P_DEFAULT);
+  H5Dset_extent(s.dset_dr_block, dims);
+  file_space = H5Dget_space(s.dset_dr_block);
   H5Sselect_hyperslab(file_space, H5S_SELECT_SET, start, NULL, chunk_dims, NULL);
-  H5Dwrite(dset, H5T_NATIVE_DOUBLE, mem_space, file_space, H5P_DEFAULT, &s.dr_block);
+  H5Dwrite(s.dset_dr_block, H5T_NATIVE_DOUBLE, mem_space, file_space, H5P_DEFAULT, &s.dr_block);
 
   // free resources
   H5Sclose(file_space);
   H5Sclose(mem_space);
-  H5Dclose(dset);
-  H5Fflush(file,H5F_SCOPE_GLOBAL);
 }
 
 //=========//
@@ -364,15 +364,15 @@ hid_t recover(const string filename, State& s){
   hsize_t start[6] = {0, 0, 0, 0, 0, 0};
   hsize_t dims[6];
   hsize_t ndims;
-  hid_t file_space, mem_space, dset;
+  hid_t file_space, mem_space;
 
   hid_t file = H5Fopen (filename.c_str(), H5F_ACC_RDWR, H5P_DEFAULT);
 
   // fmatrixf
-  dset = H5Dopen (file, "fmatrixf", H5P_DEFAULT);
+  s.dset_f = H5Dopen (file, "fmatrixf", H5P_DEFAULT);
   ndims=6;
   mem_space = H5Screate_simple(ndims, chunk_dims, NULL);
-  file_space = H5Dget_space (dset);
+  file_space = H5Dget_space (s.dset_f);
   H5Sget_simple_extent_dims(file_space, dims, NULL);
   start[0] = dims[0]-1;
   assert(dims[1]==NM);
@@ -381,36 +381,35 @@ hid_t recover(const string filename, State& s){
   assert(dims[4]==NF);
   assert(dims[5]==2);
   H5Sselect_hyperslab (file_space, H5S_SELECT_SET, start, NULL, chunk_dims, NULL);
-  H5Dread (dset, H5T_NATIVE_DOUBLE, mem_space, file_space, H5P_DEFAULT, &s.fmatrixf);
+  H5Dread (s.dset_f, H5T_NATIVE_DOUBLE, mem_space, file_space, H5P_DEFAULT, &s.fmatrixf);
 
   // 1D stuff
   ndims=1;
   mem_space = H5Screate_simple(ndims, chunk_dims, NULL);
   
   // r
-  dset = H5Dopen (file, "r(cm)", H5P_DEFAULT);
-  file_space = H5Dget_space (dset);
+  s.dset_r = H5Dopen (file, "r(cm)", H5P_DEFAULT);
+  file_space = H5Dget_space (s.dset_r);
   H5Sselect_hyperslab (file_space, H5S_SELECT_SET, start, NULL, chunk_dims, NULL);
-  H5Dread (dset, H5T_NATIVE_DOUBLE, mem_space, file_space, H5P_DEFAULT, &s.r);
+  H5Dread (s.dset_r, H5T_NATIVE_DOUBLE, mem_space, file_space, H5P_DEFAULT, &s.r);
 
   // dr_osc
-  dset = H5Dopen (file, "dr_osc(cm)", H5P_DEFAULT);
-  H5Dread (dset, H5T_NATIVE_DOUBLE, mem_space, file_space, H5P_DEFAULT, &s.dr_osc);
+  s.dset_dr_osc = H5Dopen (file, "dr_osc(cm)", H5P_DEFAULT);
+  H5Dread (s.dset_dr_osc, H5T_NATIVE_DOUBLE, mem_space, file_space, H5P_DEFAULT, &s.dr_osc);
   
-  // dr_osc
-  dset = H5Dopen (file, "dr_int(cm)", H5P_DEFAULT);
-  H5Dread (dset, H5T_NATIVE_DOUBLE, mem_space, file_space, H5P_DEFAULT, &s.dr_int);
+  // dr_int
+  s.dset_dr_int = H5Dopen (file, "dr_int(cm)", H5P_DEFAULT);
+  H5Dread (s.dset_dr_int, H5T_NATIVE_DOUBLE, mem_space, file_space, H5P_DEFAULT, &s.dr_int);
   
-  // dr_osc
-  dset = H5Dopen (file, "dr_block(cm)", H5P_DEFAULT);
-  H5Dread (dset, H5T_NATIVE_DOUBLE, mem_space, file_space, H5P_DEFAULT, &s.dr_block);
+  // dr_block
+  s.dset_dr_block = H5Dopen (file, "dr_block(cm)", H5P_DEFAULT);
+  H5Dread (s.dset_dr_block, H5T_NATIVE_DOUBLE, mem_space, file_space, H5P_DEFAULT, &s.dr_block);
 
   s.counter = dims[0]-1;
   
   // clear resources
   H5Sclose(file_space);
   H5Sclose(mem_space);
-  H5Dclose(dset);
 
   return file;
 }
