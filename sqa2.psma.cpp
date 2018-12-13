@@ -92,6 +92,8 @@ int main(int argc, char *argv[]){
   const int step_output = get_parameter<int>(fin,"step_output");
   const int do_oscillate = get_parameter<int>(fin,"do_oscillate");
   const int do_interact = get_parameter<int>(fin,"do_interact");
+
+  cout << "iter \t t(s) \t dt(s) \t n_nu(1/ccm) \t n_nubar(1/ccm) \t n_nu-n_nubar(1/ccm) \t interact_impact" << endl;
   cout.flush();
 
   // initialize the state
@@ -114,7 +116,6 @@ int main(int argc, char *argv[]){
   // temporary variable
   array<array<MATRIX<complex<double>,NF,NF>,NE>,NM> fmatrixf0 = s.fmatrixf;
   
-  cout << "iter \t t(s) \t dt(s) \t n_nu(1/ccm) \t n_nubar(1/ccm) \t n_nu-n_nubar(1/ccm) \t interact_impact" << endl;
 
   // ***********************
   // start the loop over r *
