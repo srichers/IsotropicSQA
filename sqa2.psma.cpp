@@ -106,7 +106,7 @@ int main(int argc, char *argv[]){
   }
   else if(step_output>0) {
     cout << "Starting new file " << outputfilename << endl;
-    output_file = setup_file(outputfilename);
+    output_file = setup_file(outputfilename, s);
     write_data(output_file, s, 0);
   }
   

@@ -244,7 +244,7 @@ void K(const double dr,
 //============//
 // setup_file //
 //============//
-hid_t setup_file(string filename){
+hid_t setup_file(string filename, State& s){
   hid_t file = H5Fcreate(filename.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
   hid_t file_space;
   hsize_t ndims;
@@ -257,6 +257,7 @@ hid_t setup_file(string filename){
   file_space = H5Screate_simple(ndims, dims, max_dims);
   H5Pset_chunk(plist, ndims, chunk_dims);
   H5Dcreate(file, "fmatrixf", H5T_NATIVE_DOUBLE, file_space, H5P_DEFAULT, plist, H5P_DEFAULT);
+  s.dset_f = H5Dopen(file, "fmatrixf", H5P_DEFAULT);
 
   // RADIUS/TIME //
   ndims = 1;
@@ -266,6 +267,10 @@ hid_t setup_file(string filename){
   H5Dcreate(file, "dr_block(cm)", H5T_NATIVE_DOUBLE, file_space, H5P_DEFAULT, plist, H5P_DEFAULT);
   H5Dcreate(file, "dr_osc(cm)", H5T_NATIVE_DOUBLE, file_space, H5P_DEFAULT, plist, H5P_DEFAULT);
   H5Dcreate(file, "dr_int(cm)", H5T_NATIVE_DOUBLE, file_space, H5P_DEFAULT, plist, H5P_DEFAULT);
+  s.dset_r        = H5Dopen(file, "r(cm)", H5P_DEFAULT);
+  s.dset_dr_osc   = H5Dopen(file, "dr_osc(cm)", H5P_DEFAULT);
+  s.dset_dr_int   = H5Dopen(file, "dr_int(cm)", H5P_DEFAULT);
+  s.dset_dr_block = H5Dopen(file, "dr_block(cm)", H5P_DEFAULT);
 
   // clear resources
   H5Sclose(file_space);
@@ -305,7 +310,6 @@ void write_data(const hid_t file, State& s, const double impact){
   hsize_t ndims;
 
   // create the memory space
-  s.dset_f = H5Dopen(file, "fmatrixf", H5P_DEFAULT);
   ndims = 6;
   mem_space = H5Screate_simple(ndims, chunk_dims, NULL);
   file_space = H5Dget_space (s.dset_f);
@@ -325,28 +329,24 @@ void write_data(const hid_t file, State& s, const double impact){
   mem_space = H5Screate_simple(ndims, chunk_dims, NULL);
   
   // r
-  s.dset_r = H5Dopen(file, "r(cm)", H5P_DEFAULT);
   H5Dset_extent(s.dset_r, dims);
   file_space = H5Dget_space(s.dset_r);
   H5Sselect_hyperslab(file_space, H5S_SELECT_SET, start, NULL, chunk_dims, NULL);
   H5Dwrite(s.dset_r, H5T_NATIVE_DOUBLE, mem_space, file_space, H5P_DEFAULT, &s.r);
 
   // dr_osc
-  s.dset_dr_osc = H5Dopen(file, "dr_osc(cm)", H5P_DEFAULT);
   H5Dset_extent(s.dset_dr_osc, dims);
   file_space = H5Dget_space(s.dset_dr_osc);
   H5Sselect_hyperslab(file_space, H5S_SELECT_SET, start, NULL, chunk_dims, NULL);
   H5Dwrite(s.dset_dr_osc, H5T_NATIVE_DOUBLE, mem_space, file_space, H5P_DEFAULT, &s.dr_osc);
 
   // dr_int
-  s.dset_dr_int = H5Dopen(file, "dr_int(cm)", H5P_DEFAULT);
   H5Dset_extent(s.dset_dr_int, dims);
   file_space = H5Dget_space(s.dset_dr_int);
   H5Sselect_hyperslab(file_space, H5S_SELECT_SET, start, NULL, chunk_dims, NULL);
   H5Dwrite(s.dset_dr_int, H5T_NATIVE_DOUBLE, mem_space, file_space, H5P_DEFAULT, &s.dr_int);
 
   // dr_block
-  s.dset_dr_block = H5Dopen(file, "dr_block(cm)", H5P_DEFAULT);
   H5Dset_extent(s.dset_dr_block, dims);
   file_space = H5Dget_space(s.dset_dr_block);
   H5Sselect_hyperslab(file_space, H5S_SELECT_SET, start, NULL, chunk_dims, NULL);
