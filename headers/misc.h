@@ -355,6 +355,7 @@ void write_data(const hid_t file, State& s, const double impact){
   // free resources
   H5Sclose(file_space);
   H5Sclose(mem_space);
+  H5Fflush(file,H5F_SCOPE_LOCAL);
 }
 
 //=========//
