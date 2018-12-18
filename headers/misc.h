@@ -504,6 +504,6 @@ double uniform(){
   return (float)rand() / (float)RAND_MAX;
 }
 double exponential_random(){
-  return -log10(uniform());
+  return -log(uniform());
 }
 
