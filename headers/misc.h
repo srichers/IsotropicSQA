@@ -426,7 +426,7 @@ void Hermitize(MATRIX<complex<double>,2,2>& M, const double accuracy){
     //cout << M << endl;
     assert(error/trace < accuracy);
   }
-  complex<double> tmp = 0.5 * (M[e][mu] + conj(M[mu][e]));
+  complex<double> tmp = 0.5 * (M[mu][e] + conj(M[e][mu]));
   M[mu][e] = tmp;
   M[e][mu] = conj(tmp);
   
