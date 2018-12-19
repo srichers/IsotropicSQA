@@ -174,21 +174,24 @@ int main(int argc, char *argv[]){
     }
 
     // sanity checks
-    for(int m=matter;m<=antimatter;m++){
-      for(int i=0;i<=s.eas.ng-1;i++){
-	if(real(s.fmatrixf[m][i][e ][e ]) > 1. or
-	   real(s.fmatrixf[m][i][mu][mu]) > 1. or
-	   real(s.fmatrixf[m][i][e ][e ]) < 0. or
-	   real(s.fmatrixf[m][i][mu][mu]) < 0. or
-	   imag(s.fmatrixf[m][i][e ][e ]) > accuracy or
-	   imag(s.fmatrixf[m][i][mu][mu]) > accuracy){
-	  cout << "m"<<m << " i" << i << endl;
-	  cout << s.fmatrixf[m][i] << endl;
-	  exit(1);
-	}
-      }
-    }
-    
+    // for(int m=matter;m<=antimatter;m++){
+    //   for(int i=0;i<=s.eas.ng-1;i++){
+    // 	if(real(s.fmatrixf[m][i][e ][e ]) > 1. or
+    // 	   real(s.fmatrixf[m][i][mu][mu]) > 1. or
+    // 	   real(s.fmatrixf[m][i][e ][e ]) < 0. or
+    // 	   real(s.fmatrixf[m][i][mu][mu]) < 0. or
+    // 	   imag(s.fmatrixf[m][i][e ][e ]) > accuracy or
+    // 	   imag(s.fmatrixf[m][i][mu][mu]) > accuracy){
+    // 	  cout << "m"<<m << " i" << i << endl;
+    // 	  cout << s.fmatrixf[m][i] << endl;
+    // 	  exit(1);
+    // 	}
+    //   }
+    // }
+    #pragma omp parallel for collapse(2)
+    for(int m=matter;m<=antimatter;m++)
+      for(int i=0;i<=s.eas.ng-1;i++)
+	Hermitize(s.fmatrixf[m][i], accuracy);
     
   }while(finish==false);
 
