@@ -142,7 +142,7 @@ class EAS{
   double temperature = 0./0.; /*MeV*/
   array<double,NE> E; // erg
   array<double,NE> nu, dnu; // Hz
-  array<double,NE> eas;
+  array<double, 4*NE*NM*NF> eas;
   array<double,NE*NE*NM*NF> escat_kernel0; // out-scattering
   array<double,NE*NE*NM*NF> escat_kernel1;
   array<double,NE*NE*NM*NF> pair_kernel0; // neutrino pair annihilation
@@ -219,12 +219,14 @@ class EAS{
 							  &ng,&ng,&n_legendre);
 	for(int og=0; og<ng; og++)
 	  for(int ig=0; ig<ng; ig++){
-	    escat_kernel0[kernel_index(lns-1, ig, og)] = phi[0][og][ig];
-	    escat_kernel1[kernel_index(lns-1, ig, og)] = phi[1][og][ig];
+	    int ki = kernel_index(lns-1, ig, og);
+	    assert(ki < escat_kernel0.size());
+	    escat_kernel0[ki] = phi[0][og][ig];
+	    escat_kernel1[ki] = phi[1][og][ig];
 	  }
       }
     } 
-
+    
     // PAIR ANNIHILATION KERNELS
     if(do_pair){
       //[a][j][i] = out group i, and in group j (ccm/s)
@@ -236,8 +238,10 @@ class EAS{
 							  &ng,&ng,&nvars);
 	for(int og=0; og<ng; og++)
 	  for(int ig=0; ig<ng; ig++){
-	    pair_kernel0[kernel_index(lns-1, ig, og)] = phi[1][og][ig];
-	    pair_kernel1[kernel_index(lns-1, ig, og)] = phi[3][og][ig];
+	    int ki = kernel_index(lns-1, ig, og);
+	    assert(ki < pair_kernel0.size());
+	    pair_kernel0[ki] = phi[1][og][ig];
+	    pair_kernel1[ki] = phi[3][og][ig];
 	  }
       }
     }
@@ -287,13 +291,22 @@ class EAS{
     return abs(is,ig) * fermidirac(is,ig);
   }
   double abs(const int is,const int ig) const{ // 1/cm
-    return eas[index(is,ig,1)];
+    int ind = index(is,ig,1);
+    assert(ind < eas.size());
+    return eas[ind];
   }
   double scat(const int is,const int ig) const{ // 1/cm
-    return eas[index(is,ig,2)];
+    int ind = index(is,ig,2);
+    assert(ind < eas.size());
+    return eas[ind];
   }
   double delta(const int is,const int ig) const{ // 1/cm
-    return (do_delta ? eas[index(is,ig,3)] : 0);
+    if(do_delta){
+      int ind = index(is,ig,3);
+      assert(ind < eas.size());
+      return eas[ind];
+    }
+    else return 0;
   }
   double fermidirac(const int is, const int ig) const{
     double mu;
