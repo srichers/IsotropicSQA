@@ -1,0 +1,15 @@
+/home/sricher/tables/NuLib/full_100MeV_NE25.h5 -- NuLib file
+/home/sricher/tables/EOS/HShenEOS_rho220_temp180_ye65_version_1.1_20120817.h5 -- EOS file
+f.h5
+1e12      -- rho (g/ccm)
+0.3       -- Ye
+10        -- T (MeV)
+2e-5     -- tend (s)
+1e-11     -- dt0 (s)
+1e-12     -- oscillation accuracy
+1e-3     -- max impact
+1.1        -- max factor by which timestep can increase
+1         -- amount of mixing in initial conditions (0-1)
+1       -- how often to output
+1         -- do_oscillate?
+1         -- do_interact?

@@ -1,0 +1,113 @@
+IsotropicSQA is an isotropic, homogeneous neutrino QKE evolution code
+written by Jim Kneller and Sherwood Richers. It relies on NuLib, a
+neutrino interaction rate library written by Evan O'Connor.
+
+To build the program, the following prerequisites need to be
+installed. The HDF5 location needs to be pointed to in the Makefile,
+but after that compiling is done with a simple
+
+  make
+
+Running the program requires a primitive parameter file, which is a
+text file with parameters each on a separate line in the correct
+order. An example parameter file is included in
+parameters_template. To run, execute
+
+  sqa2.psma.x parameters
+
+The output will be an HDF5 file called "f.h5" that contains the
+dimensionless distribution function information:
+r(cm)  - proxy for the time (r=ct)
+dr_block(cm) - proxy for the block timestep (dr=cdt). Stored for
+               recovery purposes
+dr_int(cm)   - proxy for the interaction integration timestep
+               (dr=cdt). Stored for recovery purposes.
+dr_osc(cm)   - proxy for the oscillation integration timestep
+               (dr=cdt). Stored for recovery purposes.
+fmatrixf     - dimensionless distribution function. Accessed with
+               [time][helicity][energy][flavor1][flavor2][0=real,1=imaginary]
+
+########
+# HDF5 #
+########
+
+HDF5 is used by NuLib to create and read the opacity tables and by
+IsotropicSQA to read opacity tables and output results. IT MUST BE
+COMPILED BY THE SAME FORTRAN COMPILER COMPILING NULIB. If you can get
+away with a copy already installed by "apt-get install
+libhdf5-serial-dev" (check on ubuntu using "dpkg -l | grep 'hdf5'"
+without the quotes) or some other means that's fine, but chances are
+that it was compiled with a different compiler and you will have to
+recompile it yourself. You will also have to change the values of the
+hdf5 path in make.inc to reflect the system's location for the hdf5
+files. Below are instructions for installing the latest version tested
+into the "external" directory.
+
+If you need to compile your own copy of hdf5, download the tarball and
+extract the table:
+
+    wget http://www.hdfgroup.org/ftp/HDF5/current/src/hdf5-1.8.13.tar.gz
+    tar -xvf hdf5-1.8.16.tar.gz -C external
+    rm hdf5-1.8.16.tar.gz
+
+Go into the directory
+
+    cd external/hdf5-1.8.16
+
+Configure the make process. Some versions of gcc have a bug that
+causes hdf5 to fail tests if any optimization is enabled, so there are
+two examples below. The only tested compilers are intel and GNU.
+
+    FC=gfortran CC=gcc CXX=g++  ./configure --enable-fortran --enable-cxx   #for GNU compilers
+    FC=ifort    CC=icc CXX=icpc ./configure --enable-fortran --enable-cxx   #for Intel compilers
+
+Build and test the binaries. This takes quite a while.
+
+    make
+    make test
+    make install
+
+Everything actually needed for compiling, linking, and running the
+code is in the external/hdf5-1.8.13/hdf5 subdirectory. The default
+hdf5 path in make.inc.template points to this location. Make sure that
+the mpi compiler wrapper scripts (mpif90, etc) use the same compiler
+that you used to compile hdf5 (see the beginning of the prerequisites
+section).
+
+
+
+#########
+# NuLib #
+#########
+NuLib calculates the neutrino opacities based on a tabulated equation
+of state (EOS). It must be built to yeild the executable to generate
+the table and the libraries used by sedona to read the table. It must
+be run to generate the opacity table before running IsotropicSQA. This is
+all described below.
+
+--Building------------
+
+NuLib is publicly available at <nulib.org>, but is also contained
+within IsotropicSQA as a git submodule. This makes it easy to pair a commit
+of sedona with a commit of nulib, so results are entirely
+reproducible. That is, each sedona commit knows which commit of NuLib
+to check out to make the both codes exactly as they were at the time
+of sedona's commit. To download NuLib, execute the following in the
+base directory. It will automatically download into the "external"
+directory.
+
+    git submodule init
+    git submodule update
+
+Check that your parallel compiler wrapper script uses the same
+compiler that was used to build HDF5 (see the top of the prerequisites
+section). Then build NuLib
+
+  cd NuLib
+  make
+
+If you want to generate an opacity table, you need to edit the
+location of an EOS table in the NuLib/parameters file. The rest of the
+NuLib parameters are only relevant when including weak reaction rate
+tables for individual nuclei, which we have never used, so they can be
+ignored.
