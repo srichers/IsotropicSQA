@@ -1,0 +1,3 @@
+[submodule "NuLib"]
+	path = NuLib
+	url = git@github.com:srichers/NuLib.git
