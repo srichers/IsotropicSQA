@@ -93,6 +93,7 @@ of sedona with a commit of nulib, so results are entirely
 reproducible. That is, each sedona commit knows which commit of NuLib
 to check out to make the both codes exactly as they were at the time
 of sedona's commit. To download NuLib, execute the following in the
+
 base directory. It will automatically download into the "external"
 directory.
 
@@ -110,4 +111,6 @@ If you want to generate an opacity table, you need to edit the
 location of an EOS table in the NuLib/parameters file. The rest of the
 NuLib parameters are only relevant when including weak reaction rate
 tables for individual nuclei, which we have never used, so they can be
-ignored.
+ignored. Note that if you are using an EOS that includes light nuclei
+(e.g., Hempel*, SFHo/x), you have to change the make.inc file to say
+NUCLEI_HEMPEL=1 (near the end of the file) and recompile.
