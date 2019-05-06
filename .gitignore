@@ -4,3 +4,6 @@ sqa2.psma.x
 *~
 *.png
 sqa.tar.gz
+.cproject
+.project
+.settings
