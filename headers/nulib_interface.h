@@ -314,7 +314,7 @@ class EAS{
   double Phi0scat(const int is,const int igin, const int igout) const{ // cm^3/s/sr
     double result = 0;
     if(igin == igout)
-      result += scat(is,igin)
+      result += 2. * scat(is,igin)
 	/(4.*M_PI*nu[igin]*nu[igin]*dnu[igin]/cgs::constants::c4);
     if(do_iscat)
       result += escat_kernel0[kernel_index(is,igin,igout)];
@@ -323,7 +323,7 @@ class EAS{
   double Phi1scat(const int is,const int igin, const int igout) const{ // cm^3/s/sr
     double result = 0;
     if(igin == igout)
-      result += scat(is,igin)*delta(is,igin)/3.
+      result += 2./3. * scat(is,igin)*delta(is,igin)
 	/(4.*M_PI*nu[igin]*nu[igin]*dnu[igin]/cgs::constants::c4);
     if(do_iscat)
       result += escat_kernel1[kernel_index(is,igin,igout)];
