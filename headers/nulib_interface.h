@@ -327,7 +327,7 @@ class EAS{
 	/(4.*M_PI*nu[igin]*nu[igin]*dnu[igin]/cgs::constants::c4);
     if(do_iscat)
       result += escat_kernel1[kernel_index(is,igin,igout)];
-    else return 0;
+    return result;
   }
   double Phi0pair(const int is,const int igin, const int igout) const{ // cm^3/s/sr
     double result = 0;
@@ -339,7 +339,7 @@ class EAS{
     double result = 0;
     if(do_pair)
       result += pair_kernel1[kernel_index(is,igin,igout)];
-    else return 0;
+    return result;
   }
 };
 
