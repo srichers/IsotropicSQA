@@ -214,17 +214,15 @@ array<array<MATRIX<complex<double>,NF,NF>,NE>,NM> my_interact
 	    if(j2<0 or j2>=NE) continue;
 
 	    int index = eas.nu4_kernel_index(i,j,j3);
-	    double kernel = __nulibtable_MOD_nulibtable_nu4scat[index] * 0.5;
+	    double kernel = __nulibtable_MOD_nulibtable_nu4scat[index];
+	    index = eas.nu4_kernel_index(i,j3,j);
+	    double other_kernel = __nulibtable_MOD_nulibtable_nu4scat[index];
 
 	    tmp = (1.-fmatrixf[m][j]) * fmatrixf[m][j2];
 	    Pi_minus += (Trace(tmp) + tmp) * (1.-fmatrixf[m][j3]) * kernel;
-	    tmp = (1.-fmatrixf[m][j3]) * fmatrixf[m][j2];
-	    Pi_minus += (Trace(tmp) + tmp) * (1.-fmatrixf[m][j]) * kernel;
 
 	    tmp = fmatrixf[m][j]*(1.-fmatrixf[m][j2]);
 	    Pi_plus  += (Trace(tmp) + tmp) * fmatrixf[m][j3] * kernel;
-	    tmp = fmatrixf[m][j3]*(1.-fmatrixf[m][j2]);
-	    Pi_plus  += (Trace(tmp) + tmp) * fmatrixf[m][j] * kernel;
 	  }
 	}
 	
@@ -235,26 +233,18 @@ array<array<MATRIX<complex<double>,NF,NF>,NE>,NM> my_interact
 	    if(j2<0 or j2>=NE) continue;
 
 	    int index = eas.nu4_kernel_index(i,j,j3);
-	    double kernel = __nulibtable_MOD_nulibtable_nu4pair[index] * 0.5;
-	    
+	    double kernel = __nulibtable_MOD_nulibtable_nu4pair[index];
+
 	    tmp = fmatrixf[mbar][j2] * (1.-fmatrixf[mbar][j]);
 	    Pi_minus += (Trace(tmp) + tmp) * (1.-fmatrixf[m][j3]) * kernel;
-	    tmp = fmatrixf[mbar][j2] * (1.-fmatrixf[mbar][j3]);
-	    Pi_minus += (Trace(tmp) + tmp) * (1.-fmatrixf[m][j]) * kernel;
 
 	    tmp = (1.-fmatrixf[m][j3]) * (1.-fmatrixf[mbar][j]);
 	    Pi_minus += (Trace(tmp) + tmp) * fmatrixf[mbar][j2] * kernel;
-	    tmp = (1.-fmatrixf[m][j]) * (1.-fmatrixf[mbar][j3]);
-	    Pi_minus += (Trace(tmp) + tmp) * fmatrixf[mbar][j2] * kernel;
-	    
+
 	    tmp = (1.-fmatrixf[mbar][j2])*fmatrixf[mbar][j];
 	    Pi_plus += (Trace(tmp) + tmp) * fmatrixf[m][j3] * kernel;
-	    tmp = (1.-fmatrixf[mbar][j2])*fmatrixf[mbar][j3];
-	    Pi_plus += (Trace(tmp) + tmp) * fmatrixf[m][j] * kernel;
 
 	    tmp = fmatrixf[m][j3]*fmatrixf[mbar][j];
-	    Pi_plus += (Trace(tmp) + tmp) * (1.-fmatrixf[mbar][j2]) * kernel;
-	    tmp = fmatrixf[m][j]*fmatrixf[mbar][j3];
 	    Pi_plus += (Trace(tmp) + tmp) * (1.-fmatrixf[mbar][j2]) * kernel;
 	  }
 	}
@@ -262,6 +252,8 @@ array<array<MATRIX<complex<double>,NF,NF>,NE>,NM> my_interact
 	assert(j<NE);
       }
 
+      assert( abs(Pi_plus[e][mu] - conj(Pi_plus[mu][e])) / abs(Pi_plus[e][mu]) < 1e-5);
+      assert( abs(Pi_minus[e][mu] - conj(Pi_minus[mu][e])) / abs(Pi_minus[e][mu]) < 1e-5);
       dfdr[m][i] += Pi_plus *(1.-fmatrixf[m][i]) + (1.-fmatrixf[m][i])*Pi_plus ;
       dfdr[m][i] -= Pi_minus*    fmatrixf[m][i]  +     fmatrixf[m][i] *Pi_minus;
     } // end loop over i
