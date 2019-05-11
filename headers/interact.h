@@ -252,8 +252,10 @@ array<array<MATRIX<complex<double>,NF,NF>,NE>,NM> my_interact
 	assert(j<NE);
       }
 
-      assert( abs(Pi_plus[e][mu] - conj(Pi_plus[mu][e])) / abs(Pi_plus[e][mu]) < 1e-5);
-      assert( abs(Pi_minus[e][mu] - conj(Pi_minus[mu][e])) / abs(Pi_minus[e][mu]) < 1e-5);
+      if(abs(Pi_plus[e][mu]) > 0)
+	assert( abs(Pi_plus[e][mu] - conj(Pi_plus[mu][e])) / abs(Pi_plus[e][mu]) < 1e-5);
+      if(abs(Pi_minus[e][mu]) > 0)
+	assert( abs(Pi_minus[e][mu] - conj(Pi_minus[mu][e])) / abs(Pi_minus[e][mu]) < 1e-5);
       dfdr[m][i] += Pi_plus *(1.-fmatrixf[m][i]) + (1.-fmatrixf[m][i])*Pi_plus ;
       dfdr[m][i] -= Pi_minus*    fmatrixf[m][i]  +     fmatrixf[m][i] *Pi_minus;
     } // end loop over i
