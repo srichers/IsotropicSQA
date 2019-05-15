@@ -84,6 +84,16 @@ extern double  __nulibtable_MOD_nulibtable_logieta_min;
 extern double  __nulibtable_MOD_nulibtable_logieta_max;
 extern int     __nulib_MOD_total_eos_variables;
 
+// pointers to be freed after getting interaction rates
+extern double* __nulibtable_MOD_nulibtable_emissivities;
+extern double* __nulibtable_MOD_nulibtable_absopacity;
+extern double* __nulibtable_MOD_nulibtable_scatopacity;
+extern double* __nulibtable_MOD_nulibtable_delta;
+extern double* __nulibtable_MOD_nulibtable_itable_phi0;
+extern double* __nulibtable_MOD_nulibtable_itable_phi1;
+extern double* __nulibtable_MOD_nulibtable_epannihiltable_phi0;
+extern double* __nulibtable_MOD_nulibtable_epannihiltable_phi1;
+
 // These are fortran functions and module variables in nulib.a                                                                  
 extern "C"{
   void nulibtable_range_species_range_energy_(
@@ -239,6 +249,16 @@ class EAS{
       }
     }
     }
+
+    // free memory
+    free(__nulibtable_MOD_nulibtable_emissivities);
+    free(__nulibtable_MOD_nulibtable_absopacity);
+    free(__nulibtable_MOD_nulibtable_scatopacity);
+    free(__nulibtable_MOD_nulibtable_delta);
+    free(__nulibtable_MOD_nulibtable_itable_phi0);
+    free(__nulibtable_MOD_nulibtable_itable_phi1);
+    free(__nulibtable_MOD_nulibtable_epannihiltable_phi0);
+    free(__nulibtable_MOD_nulibtable_epannihiltable_phi1);
   }
   
   double get_munue(const double rho /* g/ccm */, const double temp /*MeV*/, const double ye) const{ // MeV
