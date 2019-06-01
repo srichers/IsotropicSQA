@@ -12,5 +12,5 @@ COMP = g++  -g -std=gnu++11 -O3 -fopenmp -Wall # -DNDEBUG
 
 ${WHICHCODE}.o: ${WHICHCODE}.cpp
 	rm -f sqa2.psma.x sqa.tar.gz
-	tar --exclude=*.txt --exclude=*.lum --exclude=*.cyl -cvzf sqa.tar.gz ./*
+	tar --exclude=*.lum --exclude=*.cyl -cvzf sqa.tar.gz ./*
 	${COMP} ${WHICHCODE}.cpp -o ${WHICHCODE}.x ${INCLUDE} ${LIBRARY}
