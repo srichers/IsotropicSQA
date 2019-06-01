@@ -18,7 +18,7 @@
 //
 */
 
-const int NE=25;
+const int NE=50;
 
 const int NM=2;
 enum state { matter,antimatter};

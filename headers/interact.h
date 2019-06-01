@@ -212,7 +212,10 @@ array<array<MATRIX<complex<double>,NF,NF>,NE>,NM> my_interact
 	  for(int j3=0; j3<NE; j3++){
 	    int j2 = eas.nu4_bin2(i,j,j3);
 	    if(j2<0 or j2>=NE) continue;
-
+	    
+	    if(abs(fmatrixf[m][j][e][mu]) > 0)
+	      assert( abs(fmatrixf[m][j][e][mu] - conj(fmatrixf[m][j][mu][e])) / abs(fmatrixf[m][j][e][mu]) < 1e-5);
+	    
 	    int index = eas.nu4_kernel_index(i,j,j3);
 	    double kernel = __nulibtable_MOD_nulibtable_nu4scat[index];
 	    index = eas.nu4_kernel_index(i,j3,j);
@@ -234,6 +237,9 @@ array<array<MATRIX<complex<double>,NF,NF>,NE>,NM> my_interact
 
 	    int index = eas.nu4_kernel_index(i,j,j3);
 	    double kernel = __nulibtable_MOD_nulibtable_nu4pair[index];
+
+	    if(abs(fmatrixf[mbar][j][e][mu]) > 0)
+	      assert( abs(fmatrixf[mbar][j][e][mu] - conj(fmatrixf[mbar][j][mu][e])) / abs(fmatrixf[mbar][j][e][mu]) < 1e-5);
 
 	    tmp = fmatrixf[mbar][j2] * (1.-fmatrixf[mbar][j]);
 	    Pi_minus += (Trace(tmp) + tmp) * (1.-fmatrixf[m][j3]) * kernel;
