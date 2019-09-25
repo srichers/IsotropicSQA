@@ -100,8 +100,8 @@ array<array<double,NF>,NE> set_kV(const array<double,NE>& E){
   assert(NF==2);
   array<array<double,NF>,NE> kV;
   for(int i=0;i<NE;i++){
-    kV[i][0] = m1*m1             * cgs::constants::c4 /2./E[i];
-    kV[i][1] = (kV[i][0] + dm21) * cgs::constants::c4 /2./E[i];
+    kV[i][0] = m1*m1           * cgs::constants::c4 /2./E[i];
+    kV[i][1] = kV[i][0] + dm21 * cgs::constants::c4 /2./E[i];
   }
 
   // determine eigenvalue ordering
