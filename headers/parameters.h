@@ -18,7 +18,7 @@
 //
 */
 
-const int NE=50;
+const int NE=25;
 
 const int NM=2;
 enum state { matter,antimatter};
@@ -41,7 +41,7 @@ const hsize_t max_dims[6] = {H5S_UNLIMITED, NM, NE, NF, NF, 2};
 const hsize_t chunk_dims[6] = {1, NM, NE, NF, NF, 2};
 
 const double M_2PI = 2.*M_PI;
-const complex<double> I = 1i;
+const complex<double> I(0.0,1.0);
 // units, etc
 namespace cgs{
   namespace units{
