@@ -29,13 +29,13 @@
 inline bool hdf5_dataset_exists(const char* filename, const char* datasetname){
   bool exists = true;
 
-  // Temporarily turn off error printing                                                                                   
+  // Temporarily turn off error printing
   H5E_auto2_t func;
   void* client_data;
   H5::Exception::getAutoPrint(func,&client_data);
   H5::Exception::dontPrint();
 
-  // See if dataset exists                                                                                                 
+  // See if dataset exists
   H5::H5File file(filename, H5F_ACC_RDONLY);
   H5::DataSet dataset;
   try{
@@ -45,7 +45,7 @@ inline bool hdf5_dataset_exists(const char* filename, const char* datasetname){
     exists = false;
   }
 
-  // Turn error printing back on                                                                                           
+  // Turn error printing back on
   H5::Exception::setAutoPrint(func,client_data);
   file.close();
 
@@ -94,7 +94,7 @@ extern double* __nulibtable_MOD_nulibtable_itable_phi1;
 extern double* __nulibtable_MOD_nulibtable_epannihiltable_phi0;
 extern double* __nulibtable_MOD_nulibtable_epannihiltable_phi1;
 
-// These are fortran functions and module variables in nulib.a                                                                  
+// These are fortran functions and module variables in nulib.a
 extern "C"{
   void nulibtable_range_species_range_energy_(
 		  double*, //rho
@@ -172,9 +172,10 @@ class EAS{
     ns = __nulibtable_MOD_nulibtable_number_species;
     ng = __nulibtable_MOD_nulibtable_number_groups;
     nv = __nulibtable_MOD_nulibtable_number_easvariables;
+    cout << ng << endl; cout << NE << endl;
     assert(NE==ng);
     assert(NM*NF == ns);
-    
+
     // set energy grid
     cout << endl;
     cout<<"NE="<<ng << endl;
@@ -187,7 +188,7 @@ class EAS{
       cout << E[i]/(1.e6*cgs::units::eV) << " ";
     }
     cout.flush();
-    
+
     cout << "#   logrho range: {" << __nulibtable_MOD_nulibtable_logrho_min << "," << __nulibtable_MOD_nulibtable_logrho_max << "} g/ccm" << endl;
     cout << "#   logT   range: {" << __nulibtable_MOD_nulibtable_logtemp_min << "," << __nulibtable_MOD_nulibtable_logtemp_max << "} MeV" << endl;
     cout << "#   Ye  range: {" << __nulibtable_MOD_nulibtable_ye_min << "," << __nulibtable_MOD_nulibtable_ye_max << "}" << endl;
@@ -228,14 +229,14 @@ class EAS{
 	    escat_kernel1[ki] = phi[1][og][ig];
 	  }
       }
-    } 
-    
+    }
+
     // PAIR ANNIHILATION KERNELS
     if(do_pair){
       //[a][j][i] = out group i, and in group j (ccm/s)
       // a=0:Phi0p a=1:Phi0a a=2:Phi1p a=3:Phi1a
       int nvars = n_legendre*2;
-      double phi[nvars][ng][ng]; 
+      double phi[nvars][ng][ng];
       for(int lns=1; lns<=__nulibtable_MOD_nulibtable_number_species; lns++){
 	nulibtable_epannihil_single_species_range_energy_(&T_in, &eta, &lns, (double*)phi,
 							  &ng,&ng,&nvars);
@@ -260,14 +261,14 @@ class EAS{
     free(__nulibtable_MOD_nulibtable_epannihiltable_phi0);
     free(__nulibtable_MOD_nulibtable_epannihiltable_phi1);
   }
-  
+
   double get_munue(const double rho /* g/ccm */, const double temp /*MeV*/, const double ye) const{ // MeV
     double eos_variables[__nulib_MOD_total_eos_variables];
     for(int i=0; i<__nulib_MOD_total_eos_variables; i++) eos_variables[i] = 0;
     eos_variables[0] = rho;
     eos_variables[1] = temp;
     eos_variables[2] = ye;
-    
+
     set_eos_variables_(eos_variables);
     double mue = eos_variables[10];
     double muhat = eos_variables[13];
@@ -279,12 +280,12 @@ class EAS{
     eos_variables[0] = rho;
     eos_variables[1] = temp;
     eos_variables[2] = ye;
-    
+
     set_eos_variables_(eos_variables);
     double mue = eos_variables[10];
     return mue/eos_variables[1];
   }
-  
+
   int index(const int is,const int ig,const int iv) const{
     return is + ig*ns + iv*ns*ng;
   }
@@ -299,7 +300,7 @@ class EAS{
   inline int nu4_bin2(const int ik, const int i1, const int i3) const{
     return i1+i3-ik;
   }
-  
+
   double emis(const int is,const int ig) const{ // 1/cm/sr
     return abs(is,ig) * fermidirac(is,ig);
   }

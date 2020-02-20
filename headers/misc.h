@@ -309,7 +309,7 @@ void write_data(const hid_t file, State& s, const double impact){
   hsize_t dims[ndims];
   H5Sget_simple_extent_dims(file_space, dims, NULL);
   dims[0]++;
-  hsize_t start[ndims] = {dims[0]-1, 0, 0, 0, 0, 0};
+  hsize_t start[6] = {dims[0]-1, 0, 0, 0, 0, 0};
 
   // fmatrixf
   H5Dset_extent(s.dset_f, dims);
