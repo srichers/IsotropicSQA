@@ -13,4 +13,4 @@ sqa2.psma 2.x
 sqa2.psma 3.x
 sqa2.psma.x.dSYM/
 parameters*
-external/
+.gitignore
