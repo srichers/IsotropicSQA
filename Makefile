@@ -1,6 +1,6 @@
 #!/bin/csh
-NULIB_LOC = ../external/NuLib
-HDF5_LOC = ../external/hdf5-1.10.5/hdf5
+NULIB_LOC = /Users/jspark971/external/NuLib
+HDF5_LOC = /Users/jspark971/external/hdf5-1.10.5/hdf5
 # export DYLD_LIBRARY_PATH=/Users/jspark971/Documents/research/isotropicSQA/IsotropicSQA/external/hdf5-1.10.5/hdf5/lib/
 
 INCLUDE  = -I${HDF5_LOC}/include
