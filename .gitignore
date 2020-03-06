@@ -3,12 +3,10 @@ outerr/
 sqa2.psma.x
 *~
 *.png
-sqa.tar.gz
 .cproject
 .project
 .settings
-sqa 2.tar.gz
-sqa 3.tar.gz
+*.tar.gz
 sqa2.psma 2.x
 sqa2.psma 3.x
 sqa2.psma.x.dSYM/
