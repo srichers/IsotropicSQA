@@ -1,9 +1,0 @@
-============================
-h5diff_plugin.sh  Test Log
-============================
-Testing ../../src/h5diff/h5diff -v tudfilter.h5 tudfilter2.h5          PASSED
-All Plugin API tests passed.
-        0.31 real         0.07 user         0.14 sys
-
-Finished testing h5diff_plugin.sh 
-============================
