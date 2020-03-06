@@ -1,0 +1,27 @@
+============================
+testvdsswmr.sh  Test Log
+============================
+cp: vds_swmr_test is a directory (not copied).
+
+###############################################################################
+## Basic VDS SWMR test - writing to a tiled plane
+###############################################################################
+launch the generator
+launch the 6 SWMR VDS writers (1 per source)
+launch 5 SWMR readers
+SWMR SSWMR writer exitedw successfuWMR wrillyriter exited successfu
+lly
+ter exited successfully
+SWMR wriSWMR writer exter exited successfully
+ited successfully
+SSWMR reader exited successfully
+SWMR reader exited successfully
+SSWMR reader exited successfully
+WWMRSWMR rea der exited succereadeMssfullRyr exited successfully
+
+ writer exited successfully
+VDS SWMR tests passed.
+       25.77 real       136.69 user        17.70 sys
+
+Finished testing testvdsswmr.sh 
+============================

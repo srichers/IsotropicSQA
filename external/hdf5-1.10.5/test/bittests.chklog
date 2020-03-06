@@ -1,0 +1,16 @@
+============================
+ bittests  Test Log
+============================
+Testing bit search operations                                          PASSED
+Testing bit set operations                                             PASSED
+Testing bit clear operations                                           PASSED
+Testing bit copy operations                                            PASSED
+Testing bit shift operations                                           PASSED
+Testing bit increment operations                                       PASSED
+Testing bit decrement operations                                       PASSED
+Testing bit negate operations                                          PASSED
+All bit tests passed.
+        0.64 real         0.11 user         0.01 sys
+
+Finished testing bittests 
+============================

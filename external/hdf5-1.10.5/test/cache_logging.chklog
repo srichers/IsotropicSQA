@@ -1,0 +1,10 @@
+============================
+ cache_logging  Test Log
+============================
+Testing basic metadata cache logging functionality.
+Testing metadata cache log api calls                                   PASSED
+All Metadata Cache Logging tests passed.
+        1.89 real         0.23 user         1.39 sys
+
+Finished testing cache_logging 
+============================

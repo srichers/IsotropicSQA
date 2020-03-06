@@ -1,0 +1,9 @@
+============================
+ unregister  Test Log
+============================
+Testing Unregistering filter                                           PASSED
+All filter unregistration tests passed.
+        0.33 real         0.03 user         0.02 sys
+
+Finished testing unregister 
+============================

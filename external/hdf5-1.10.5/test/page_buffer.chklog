@@ -1,0 +1,18 @@
+============================
+ page_buffer  Test Log
+============================
+Testing Settings for Page Buffering                                    PASSED
+Testing Raw Data Handling                                              PASSED
+Testing LRU Processing                                                 PASSED
+Testing Minimum Metadata threshold Processing                         
+	Minimum metadata threshold = 100%
+	Minimum raw data threshold = 100%
+	Minimum metadata threshold = 40%, Minimum rawdata threshold = 40%
+	Minimum metadata threshold = 20%
+ PASSED
+Testing Statistics Collection                                          PASSED
+All Page Buffering tests passed.
+        0.27 real         0.02 user         0.02 sys
+
+Finished testing page_buffer 
+============================

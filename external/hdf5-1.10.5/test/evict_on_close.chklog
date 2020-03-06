@@ -1,0 +1,20 @@
+============================
+ evict_on_close  Test Log
+============================
+Testing evict-on-close cache behavior
+Testing evict on close API                                             PASSED
+Testing generating evict-on-close test file                            PASSED
+Testing evict on close with version 1 B-tree chunk index               PASSED
+Testing evict on close with extensible array chunk index               PASSED
+Testing evict on close with version 2 B-tree chunk index               PASSED
+Testing evict on close with fixed array chunk index                    PASSED
+Testing evict on close with 'single chunk' chunk index                 PASSED
+Testing evict on close with contiguous layout                          PASSED
+Testing evict on close with compact layout                             PASSED
+Testing evict on close with old-style groups                           PASSED
+Testing evict on close with new-style groups                           PASSED
+All evict-on-close tests passed.
+        0.35 real         0.06 user         0.03 sys
+
+Finished testing evict_on_close 
+============================

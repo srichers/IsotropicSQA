@@ -1,0 +1,19 @@
+============================
+ ttsafe  Test Log
+============================
+Most thread-safety tests skipped because THREADSAFE not enabled
+
+For help use: /Users/jspark971/Documents/research/IsotropicSQA/external/hdf5-1.10.5/test/.libs/ttsafe -help
+Linked with hdf5 version 1.10 release 5
+Testing  -- library threadsafe status (is_threadsafe) 
+
+
+All tests were successful. 
+
+
+Cleaning Up temp files...
+
+        0.44 real         0.01 user         0.02 sys
+
+Finished testing ttsafe 
+============================

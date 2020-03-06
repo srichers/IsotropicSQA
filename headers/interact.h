@@ -36,7 +36,7 @@ void initialize(array<array<MATRIX<complex<double>,NF,NF>,NE>,NM>& fmatrixf,
   cout << "T = " << T << " MeV" << endl;
   cout << "Ye = " << Ye << endl;
   eas.set(rho,T,Ye,do_interact);
-  
+
   for(int i=0; i<NE; i++){
     for(int m=matter; m<=antimatter; m++){
       double fe = eas.fermidirac(m, i);
@@ -47,7 +47,7 @@ void initialize(array<array<MATRIX<complex<double>,NF,NF>,NE>,NM>& fmatrixf,
       double z = (fe-fx)/2.;
       double xmax = sqrt(lmax*lmax - z*z);
       assert(xmax==xmax);
-      
+
       fmatrixf[m][i][e ][e ] = fe;
       fmatrixf[m][i][mu][mu] = fx;
       fmatrixf[m][i][e ][mu] = xmax*mixing;
@@ -147,7 +147,7 @@ array<array<MATRIX<complex<double>,NF,NF>,NE>,NM> my_interact
       for(flavour f1=e; f1<=mu; f1++)
 	for(flavour f2=e; f2<=mu; f2++)
 	  dfdr[m][i][f1][f2] = 0;
-      
+
       // emission
       dfdr[m][i][e ][e ] += eas.emis(se,i);
       dfdr[m][i][mu][mu] += eas.emis(sx,i);
@@ -157,16 +157,16 @@ array<array<MATRIX<complex<double>,NF,NF>,NE>,NM> my_interact
       for(flavour f1=e; f1<=mu; f1++)
 	for(flavour f2=e; f2<=mu; f2++)
 	  dfdr[m][i][f1][f2] -= kappa_abs[f1][f2] * fmatrixf[m][i][f1][f2];
-    
+
       // scattering and pair annihilation
       for(int j=0; j<NE; j++){
-	
+
 	// reusable variables
 	double Phi0e, Phi0x, conv_to_in_rate;
 	complex<double> unblock_in, unblock_out;
 	MATRIX<double,NF,NF> Phi0avg, Phi0tilde, Phi0;
 	MATRIX<complex<double>,NF,NF> block;
-      
+
 	// scattering rate from group i to group j
 	Phi0e = eas.Phi0scat(se,i,j); // cm^3/s/sr
 	Phi0x = eas.Phi0scat(sx,i,j);
@@ -184,7 +184,7 @@ array<array<MATRIX<complex<double>,NF,NF>,NE>,NM> my_interact
 	      (unblock_in - unblock_out - block[f1][f2]*(conv_to_in_rate - 1.));
 	  }
 	}
-      
+
 	// annihilation from group i and anti group j
 	if(eas.do_pair){
 	  Phi0e = eas.Phi0pair(se,i,j); // cm^3/s/sr
@@ -206,16 +206,16 @@ array<array<MATRIX<complex<double>,NF,NF>,NE>,NM> my_interact
 	    }
 	  }
 	}
-	
+
 	// 4-neutrino scattering
 	if(eas.do_nu4scat){
 	  for(int j3=0; j3<NE; j3++){
 	    int j2 = eas.nu4_bin2(i,j,j3);
 	    if(j2<0 or j2>=NE) continue;
-	    
-	    if(abs(fmatrixf[m][j][e][mu]) > 0)
-	      assert( abs(fmatrixf[m][j][e][mu] - conj(fmatrixf[m][j][mu][e])) / abs(fmatrixf[m][j][e][mu]) < 1e-5);
-	    
+
+	    if(abs(fmatrixf[m][j2][e][mu]) > 0) // j -> j2
+	      assert( abs(fmatrixf[m][j2][e][mu] - conj(fmatrixf[m][j2][mu][e])) / abs(fmatrixf[m][j2][e][mu]) < 1e-5);
+
 	    int index = eas.nu4_kernel_index(i,j,j3);
 	    double kernel = __nulibtable_MOD_nulibtable_nu4scat[index];
 	    index = eas.nu4_kernel_index(i,j3,j);
@@ -227,8 +227,15 @@ array<array<MATRIX<complex<double>,NF,NF>,NE>,NM> my_interact
 	    tmp = fmatrixf[m][j]*(1.-fmatrixf[m][j2]);
 	    Pi_plus  += (Trace(tmp) + tmp) * fmatrixf[m][j3] * kernel;
 	  }
+
+		if(abs(Pi_plus[e][mu]) > 0) {
+cout<<Pi_plus<< endl;
+assert( abs(fmatrixf[m][j][e][mu] - conj(fmatrixf[m][j][mu][e])) / abs(fmatrixf[m][j][e][mu]) < 1e-5);
+// assert( abs(fmatrixf[m][j2][e][mu] - conj(fmatrixf[m][j2][mu][e])) / abs(fmatrixf[m][j2][e][mu]) < 1e-5);
+assert( abs(Pi_plus[e][mu] - conj(Pi_plus[mu][e])) / abs(Pi_plus[e][mu]) < 1e-5);
+		}
 	}
-	
+
 	// 4-neutrino pair processes
 	if(eas.do_nu4pair){
 	  for(int j3=0; j3<NE; j3++){
@@ -253,13 +260,20 @@ array<array<MATRIX<complex<double>,NF,NF>,NE>,NM> my_interact
 	    tmp = fmatrixf[m][j3]*fmatrixf[mbar][j];
 	    Pi_plus += (Trace(tmp) + tmp) * (1.-fmatrixf[mbar][j2]) * kernel;
 	  }
+
+		if(abs(Pi_plus[e][mu]) > 0) {
+cout<<Pi_plus<< endl;
+assert( abs(Pi_plus[e][mu] - conj(Pi_plus[mu][e])) / abs(Pi_plus[e][mu]) < 1e-5);
+		}
 	}
-	  
+
 	assert(j<NE);
       }
 
-      if(abs(Pi_plus[e][mu]) > 0)
+      if(abs(Pi_plus[e][mu]) > 0) {
+	cout<<Pi_plus<< endl;
 	assert( abs(Pi_plus[e][mu] - conj(Pi_plus[mu][e])) / abs(Pi_plus[e][mu]) < 1e-5);
+			}
       if(abs(Pi_minus[e][mu]) > 0)
 	assert( abs(Pi_minus[e][mu] - conj(Pi_minus[mu][e])) / abs(Pi_minus[e][mu]) < 1e-5);
       dfdr[m][i] += Pi_plus *(1.-fmatrixf[m][i]) + (1.-fmatrixf[m][i])*Pi_plus ;

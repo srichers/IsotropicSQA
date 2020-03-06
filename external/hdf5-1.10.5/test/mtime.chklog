@@ -1,0 +1,11 @@
+============================
+ mtime  Test Log
+============================
+Testing modification time messages                                     PASSED
+Testing accessing old modification time messages                       PASSED
+Testing accessing new modification time messages                       PASSED
+All modification time tests passed.
+        0.27 real         0.01 user         0.02 sys
+
+Finished testing mtime 
+============================

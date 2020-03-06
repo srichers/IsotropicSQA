@@ -1,0 +1,21 @@
+============================
+ stab  Test Log
+============================
+Testing miscellaneous group tests                                      PASSED
+Testing long names                                                     PASSED
+Testing large directories                                              PASSED
+Testing miscellaneous group tests (w/new group format)                 PASSED
+Testing long names (w/new group format)                                PASSED
+Testing large directories (w/new group format)                         PASSED
+Testing group lifecycle                                                PASSED
+Testing long link names in compact groups                              PASSED
+Testing reading old groups                                             PASSED
+Testing group without compact form                                     PASSED
+Testing setting root group creation properties                         PASSED
+Testing old API routines                                               PASSED
+Testing corrupt symbol table message                                   PASSED
+All symbol table tests passed.
+        0.64 real         0.17 user         0.05 sys
+
+Finished testing stab 
+============================

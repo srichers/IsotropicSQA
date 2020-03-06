@@ -1,0 +1,19 @@
+============================
+ vfd  Test Log
+============================
+Testing basic Virtual File Driver functionality.
+Testing SEC2 file driver                                               PASSED
+Testing CORE file driver                                               PASSED
+Testing DIRECT I/O file driver                                         -SKIP-
+Testing FAMILY file driver                                             PASSED
+Testing FAMILY file driver backward compatibility                      PASSED
+Testing MULTI file driver                                              PASSED
+Testing MULTI file driver backward compatibility                       PASSED
+Testing LOG file driver                                                PASSED
+Testing STDIO file driver                                              PASSED
+Testing WINDOWS file driver                                            -SKIP-
+All Virtual File Driver tests passed.
+        0.47 real         0.01 user         0.03 sys
+
+Finished testing vfd 
+============================
