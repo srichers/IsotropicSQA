@@ -262,6 +262,19 @@ class EAS{
     free(__nulibtable_MOD_nulibtable_epannihiltable_phi1);
   }
 
+  double get_mue(const double rho /* g/ccm */, const double temp /*MeV*/, const double ye) const{ // MeV
+    double eos_variables[__nulib_MOD_total_eos_variables];
+    for(int i = 0; i<__nulib_MOD_total_eos_variables; i++)
+    eos_variables[i] = 0;
+    eos_variables[0] = rho;
+    eos_variables[1] = temp;
+    eos_variables[2] = ye;
+
+    set_eos_variables_(eos_variables);
+    double mue = eos_variables[10];
+    return mue;
+  }
+
   double get_munue(const double rho /* g/ccm */, const double temp /*MeV*/, const double ye) const{ // MeV
     double eos_variables[__nulib_MOD_total_eos_variables];
     for(int i=0; i<__nulib_MOD_total_eos_variables; i++) eos_variables[i] = 0;
