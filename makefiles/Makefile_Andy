@@ -1,6 +1,6 @@
 #!/bin/csh
-NULIB_LOC = external/NuLib
-HDF5_LOC = external/hdf5-1.10.5/hdf5
+NULIB_LOC = /Users/jspark971/external/NuLib
+HDF5_LOC = /Users/jspark971/external/hdf5-1.10.5/hdf5
 
 INCLUDE  = -I${HDF5_LOC}/include
 

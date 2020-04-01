@@ -1,9 +1,0 @@
-# ignore out/err files
-outerr/
-sqa2.psma.x
-*~
-*.png
-sqa.tar.gz
-.cproject
-.project
-.settings
