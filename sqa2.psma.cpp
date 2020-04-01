@@ -109,13 +109,13 @@ int main(int argc, char *argv[]){
     output_file = setup_file(outputfilename, s);
     write_data(output_file, s, 0);
   }
-  
+
   // random number generator - prevent aliasing in interactions and output
   srand(time(NULL));
 
   // temporary variable
   array<array<MATRIX<complex<double>,NF,NF>,NE>,NM> fmatrixf0 = s.fmatrixf;
-  
+
 
   // ***********************
   // start the loop over r *
@@ -192,7 +192,7 @@ int main(int argc, char *argv[]){
     for(int m=matter;m<=antimatter;m++)
       for(int i=0;i<=s.eas.ng-1;i++)
 	Hermitize(s.fmatrixf[m][i], accuracy);
-    
+
   }while(finish==false);
 
   cout << endl << "Finished" << endl;
